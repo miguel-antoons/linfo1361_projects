@@ -1065,6 +1065,7 @@ INPUT report_a1.aux
 INPUT ./report_a1.out
 INPUT ./report_a1.out
 INPUT /usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/ts1-iwona.enc
+INPUT /usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/rm-iwona.enc
 INPUT /usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/mi-iwona.enc
 INPUT /usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/ec-iwona.enc
 INPUT /usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/sy-iwona.enc

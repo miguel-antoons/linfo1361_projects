@@ -1,9 +1,10 @@
 # Fdb version 3
-["pdflatex"] 1677438700 "/home/niutalol/Documents/ucl/linfo1361_projects/assignment_1/rapports/report_a1.tex" "report_a1.pdf" "report_a1" 1677438700
+["pdflatex"] 1677701291 "/home/niutalol/Documents/ucl/linfo1361_projects/assignment_1/rapports/report_a1.tex" "report_a1.pdf" "report_a1" 1677701292
   "/etc/texmf/web2c/texmf.cnf" 1651002338 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/niutalol/Documents/ucl/linfo1361_projects/assignment_1/rapports/report_a1.tex" 1677438700 6399 1ba04b6f348a1f86abdabcd24a80d69c ""
+  "/home/niutalol/Documents/ucl/linfo1361_projects/assignment_1/rapports/report_a1.tex" 1677701291 10485 29e6c98c6e00cc63b140ca02950107e5 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/ec-iwona.enc" 1276043435 2027 f8708480c25b8150843bb94b8b39c93f ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/mi-iwona.enc" 1276043435 2214 c999541a20776b560b1683fd4d39b07f ""
+  "/usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/rm-iwona.enc" 1276043435 1962 cace5a3042b67248932d50e41975d81a ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/sy-iwona.enc" 1276043435 2607 4f90eff2cc240e3112f0965712b5fac0 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/iwona/ts1-iwona.enc" 1276043435 2498 0f0d8d7f399a2d1e2f1ba0b123477449 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -175,9 +176,9 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1652023869 4379155 98693266ff65f58d9f98aff394de12d2 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1652023888 2798221 0b983d5bb5dead17c3fddfc73317fa86 ""
   "report.cls" 1674744512 3307 b2688c23bab74d1ced744e260d820a6a ""
-  "report_a1.aux" 1677438700 933 63f666065233f7531c5d63b60833b19e "pdflatex"
-  "report_a1.out" 1677438700 387 940e34366ec2fc7552e6bfcdc616f455 "pdflatex"
-  "report_a1.tex" 1677438700 6399 1ba04b6f348a1f86abdabcd24a80d69c ""
+  "report_a1.aux" 1677701292 933 63f666065233f7531c5d63b60833b19e "pdflatex"
+  "report_a1.out" 1677701292 387 940e34366ec2fc7552e6bfcdc616f455 "pdflatex"
+  "report_a1.tex" 1677701291 10485 29e6c98c6e00cc63b140ca02950107e5 ""
   (generated)
   "report_a1.aux"
   "report_a1.log"

@@ -1,7 +1,7 @@
 \documentclass[11pt,a4paper]{report}
 
-\group{...}
-\students{..........}{..........}
+\group{102}
+\students{Antoons Miguel}{Danlee Maxime}
 
 \begin{document}
 
@@ -15,6 +15,9 @@
 
 \begin{answer}
 % Your answer here
+To perform a search, three classes are used. Problem, State and Node. The State class is used to represent the states of the game at a node in the tree. Each node contains a state object, a parent, the action taken from the parent to reach the actual state, the cost of the path from the initial state to the node and the depth. 
+The Problem class is used to find all the possible actions to reach a new state. It can also generate a new state from an old state and an action.
+
 \end{answer}
 
 
@@ -25,7 +28,7 @@
 \end{enumerate}
 
 \begin{answer}
-% Your answer here
+The difference between depth-first search and breadth-first search is the order in which nodes are visited. In a breadth-first algorithm, nodes at the same depth from the source node are visited before visiting nodes at a deeper depth. In depth-first search nodes are visited as far as possible along a branch before switching to another branch.
 \end{answer}
 
 
@@ -37,6 +40,9 @@
 
 \begin{answer}
 % Your answer here
+For the graph search functions, the implementations uses a graph rather than trees such as in the tree search functions.
+A tree branch only connects parents with its children, this means that there can be no cycles and the leafs of the tree are the goals.
+A graph can handle cycles but in order to prevent infinite loops, a graph algorithm must keep a data structure (typically a set or a dictionary) containing all the already visited nodes.
 \end{answer}
 
 
@@ -51,6 +57,7 @@
 
 \begin{answer}
 % Your answer here
+In python a dictionary or a set can be used. In both cases the keys must be unique so that we can check if an element has already been used.
 \end{answer}
 
 
@@ -62,6 +69,8 @@
 
 \begin{answer}
 % Your answer here
+We could define an equivalence relation between symmetrical states and only add one of them to the closed list.
+Since the actions are the same (but just symmetrical) this could save time.
 \end{answer}
 
 
@@ -76,6 +85,9 @@
 
 \begin{answer}
 % Your answer here
+For each state, the agent will consider for each column (if the column is not empty) if it can move the top element to another non-empty column.
+This means that in the worst case, the branching factor will be of \(n*(n-1)\).
+In reality, it will be lower since it can't move an element from an empty tower or to a full tower.
 \end{answer}
 
 
@@ -89,7 +101,9 @@
 \end{enumerate}
 
 \begin{answer}
-% Your answer here
+Depth-first search is advantageous in the sense that if it gets the correct the correct branch immediately, it will get the shortest path faster than the breadth-first search.
+However, since the branching factor is relatively high, the chances of getting the correct branch from at the beginning are small and thus the breadth-first search will be faster in most of the cases.
+A disadvantage of the breadth-first search is that it will consume exponentially more memory the deeper it has to go in the graph or tree to find the goal.
 \end{answer}
 
 
@@ -104,6 +118,10 @@
 
 \begin{answers}[4cm]
 % Your answer here
+The disadvantage of a tree-search is that, since no cycles are allowed, a node can be visited multiple times and a branch could end up looping between two different states.
+Additionally, two different branches could end up having the same result, a problem that doesn't exist on a graph-search since visited nodes are stored and cannot be visited twice.
+Furthermore, since in the graph algorithm the new states are evaluated directly rather than put in a list and evaluated later, the graph-search algorithm has a slight speed advantage.
+Therefore, we would choose the graph-search algorithm rather than the tree-search algorithm.
 \end{answers}
 
 
@@ -136,25 +154,25 @@
 \cline{2-13}
  & T(s) & EN & RNQ & T(s) & EN & RNQ & T(s) & EN & RNQ & T(s) & EN & RNQ\\
 \hline
-i\_01 & & & & & & & & & & & & \\
+i\_01 & 23.4 & 185194 & 100020 & 14.5 & 114214 & 70978 & 124 & 1053823 & 714303 & 180 & - & - \\
 \hline
-i\_02 & & & & & & & & & & & & \\
+i\_02 & 1.68 & 13745 & 15083 & 0.81 & 6052 & 7691 & 125 & 1062830 & 704691 & 180 & - & - \\
 \hline
-i\_03 & & & & & & & & & & & & \\
+i\_03 & 1.16 & 9804 & 11772 & 0.58 & 4115 & 5687 & 125 & 1091698 & 677801 & 180 & - & - \\
 \hline
-i\_04 & & & & & & & & & & & & \\
+i\_04 & 7.31 & 56636 & 53236 & 3.59 & 27438 & 29196 & 34.8 & 230279 & 597484 & 180 & - & - \\
 \hline
-i\_05 & & & & & & & & & & & & \\
+i\_05 & 17.8 & 76826 & 175304 & 5.31 & 21546 & 55278 & 180 & - & - & 180 & - & - \\
 \hline
-i\_06 & & & & & & & & & & & & \\
+i\_06 & 13.9 & 60649 & 128462 & 4.32 & 18044 & 42603 & 180 & - & - & 180 & - & - \\
 \hline
-i\_07 & & & & & & & & & & & & \\
+i\_07 & 11.5 & 49474 & 108087 & 3.37 & 14193 & 35279 & 180 & - & - & 180 & - & - \\
 \hline
-i\_08 & & & & & & & & & & & & \\
+i\_08 & 96.3 & 267927 & 884083 & 20.7 & 56889 & 211036 & 180 & - & - & 180 & - & - \\
 \hline
-i\_09 & & & & & & & & & & & & \\
+i\_09 & 77.7 & 228642 & 666787 & 19.8 & 53694 & 174946 & 180 & - & - & 180 & - & - \\
 \hline
-i\_10 & & & & & & & & & & & & \\
+i\_10 & 73.2 & 204786 & 678874 & 16.3 & 42435 & 162349 & 180 & - & - & 180 & - & - \\
 \hline
 \end{tabular}
 \end{center}
@@ -182,6 +200,7 @@ i\_10 & & & & & & & & & & & & \\
 \end{enumerate}
 \begin{answers}[4cm]
 	% Your answer here
+ Yes, indeed the conclusions we drew at question 2 are consistent with our results.
 \end{answers}
 
 \begin{enumerate}
@@ -193,8 +212,10 @@ i\_10 & & & & & & & & & & & & \\
 \end{enumerate}
 \begin{answers}[4cm]
 	% Your answer here
+ The breadth-graph search algorithm seems to give the best results.
+ One way to improve it is to add a condition that verifies if a child is not already in the frontier list.
+ This way, we ensure that no identical states are present in the frontier list.\\
+ Finally, we could use a set rather than a dictionary for storing the already visited nodes : it takes less memory and is slightly faster.
 \end{answers}
-
-
 
 \end{document}
