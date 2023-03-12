@@ -1,60 +1,122 @@
-from search import *
+#from search import *
+from aima_python3.search import *
+from copy import deepcopy
+import sys
+from time import sleep
 
 #################
 # Problem class #
 #################
 
+
 class SoftFlow(Problem):
+    already_find = set()
+    previous_state = set()
 
     def __init__(self, initial):
-        pass
-        
+        goal = dict()
+        start = dict()
+
+        for row in initial.grid:
+            for cell in row:
+                if 48 <= ord(cell) <= 57:
+                    goal[ord(cell) % 48] = []
+                    goal[ord(cell) % 48].append((initial.grid.index(row), row.index(cell)))
+                    goal[ord(cell) % 48].append((initial.grid.index(row) - 1, row.index(cell)))
+                    goal[ord(cell) % 48].append((initial.grid.index(row) + 1, row.index(cell)))
+                    goal[ord(cell) % 48].append((initial.grid.index(row), row.index(cell) - 1))
+                    goal[ord(cell) % 48].append((initial.grid.index(row), row.index(cell) + 1))
+                elif 97 <= ord(cell) <= 106:
+                    start[ord(cell) % 97] = (initial.grid.index(row), row.index(cell))
+
+        initial.current_positions = start
+        super().__init__(initial, goal)
+
     def actions(self, state):
-        pass
+        for current in self.goal.keys():
+            current_row = state.current_positions[current][0]
+            current_col = state.current_positions[current][1]
+
+            if state.current_positions[current] not in self.goal[current]:
+                # up
+                if current_row - 1 >= 0 and state.grid[current_row - 1][current_col] == " ":
+                    yield (current_row - 1, current_col, current)
+                # down
+                if current_row + 1 < state.nbr and state.grid[current_row + 1][current_col] == " ":
+                    yield (current_row + 1, current_col, current)
+                # left
+                if current_col - 1 >= 0 and state.grid[current_row][current_col - 1] == " ":
+                    yield (current_row, current_col - 1, current)
+                # right
+                if current_col + 1 < state.nbc and state.grid[current_row][current_col + 1] == " ":
+                    yield (current_row, current_col + 1, current)
 
     def result(self, state, action):
-        pass
+        new_state = deepcopy(state)
+
+        current_row = state.current_positions[action[2]][0]
+        current_col = state.current_positions[action[2]][1]
+
+        letter = new_state.grid[current_row][current_col]
+        new_state.grid[current_row][current_col] = str(action[2])
+        new_state.current_positions[action[2]] = (action[0], action[1])
+
+        if (action[0], action[1]) not in self.goal[action[2]]:
+            new_state.grid[action[0]][action[1]] = letter
+        else:
+            new_state.grid[action[0]][action[1]] = str(action[2])
+
+        print(new_state)
+        sleep(0.5)
+
+        return new_state
 
     def goal_test(self, state):
-        pass
+        for key in self.goal.keys():
+            if state.current_positions[key] not in self.goal[key]:
+                return False
+
+        return True
 
     def h(self, node):
-        h = 0.0
-        # ...
-        # compute an heuristic value
-        # ...
+        h = 0
+
+        for key in self.goal.keys():
+            t = 0
+            t += abs(self.goal[key][0][0] - node.state.current_positions[key][0])
+            t += abs(self.goal[key][0][1] - node.state.current_positions[key][1])
+            t -= 1
+            h += pow(t * 10000, 2)
+
         return h
-        
 
     def load(path):
         with open(path, 'r') as f:
             lines = f.readlines()
-            
+
         state = State.from_string(''.join(lines))
         return SoftFlow(state)
-
 
 
 ###############
 # State class #
 ###############
-
 class State:
-
     def __init__(self, grid):
         self.nbr = len(grid)
         self.nbc = len(grid[0])
         self.grid = grid
-        
+        self.current_positions = dict()
+
     def __str__(self):
         return '\n'.join(''.join(row) for row in self.grid)
 
     def __eq__(self, other_state):
-        pass
+        return self.grid == other_state.grid
 
     def __hash__(self):
-        pass
-    
+        return hash(str(self.grid))
+
     def __lt__(self, other):
         return hash(self) < hash(other)
 
@@ -65,23 +127,17 @@ class State:
         ))
 
 
-
-
-
-
-#####################
-# Launch the search #
-#####################
-
+# Launch the search
 problem = SoftFlow.load(sys.argv[1])
 
-node = astar_search(problem)
+node = astar_search(problem, display=True)
 
+print(node.state.grid)
 # example of print
 path = node.path()
 
 print('Number of moves: ', str(node.depth))
 for n in path:
-    print(n.state)  # assuming that the _str_ function of state outputs the correct format
+    # assuming that the _str_ function of state outputs the correct format
+    print(n.state)
     print()
-
