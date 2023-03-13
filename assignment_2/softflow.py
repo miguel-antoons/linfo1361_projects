@@ -79,12 +79,14 @@ class SoftFlow(Problem):
         h = 0
 
         for key in self.goal.keys():
-            t = 0
-            t += abs(self.goal[key][0][0] - node.state.current_positions[key][0])
-            t += abs(self.goal[key][0][1] - node.state.current_positions[key][1])
-            t -= 1
-            # h += pow(t * 10000, 2)
-            h += t
+            t = (
+                abs(self.goal[key][0][0] - node.state.current_positions[key][0])
+                + abs(self.goal[key][0][1] - node.state.current_positions[key][1])
+            )
+            if t <= 0:
+                h -= 3
+            else:
+                h += t
 
         return h
 
