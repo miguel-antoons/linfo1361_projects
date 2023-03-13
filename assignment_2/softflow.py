@@ -66,9 +66,6 @@ class SoftFlow(Problem):
         else:
             new_state.grid[action[0]][action[1]] = str(action[2])
 
-        print(new_state)
-        sleep(0.5)
-
         return new_state
 
     def goal_test(self, state):
@@ -112,10 +109,10 @@ class State:
         return '\n'.join(''.join(row) for row in self.grid)
 
     def __eq__(self, other_state):
-        return self.grid == other_state.grid
+        return hash(self) == hash(other_state)
 
     def __hash__(self):
-        return hash(str(self.grid))
+        return hash(str(self.current_positions))
 
     def __lt__(self, other):
         return hash(self) < hash(other)
