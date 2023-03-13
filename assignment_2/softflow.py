@@ -1,8 +1,8 @@
-#from search import *
-from aima_python3.search import *
+from search import *
+#from aima_python3.search import *
 from copy import deepcopy
 import sys
-from time import sleep
+#from time import sleep
 
 #################
 # Problem class #
@@ -83,7 +83,8 @@ class SoftFlow(Problem):
             t += abs(self.goal[key][0][0] - node.state.current_positions[key][0])
             t += abs(self.goal[key][0][1] - node.state.current_positions[key][1])
             t -= 1
-            h += pow(t * 10000, 2)
+            # h += pow(t * 10000, 2)
+            h += t
 
         return h
 
@@ -109,7 +110,7 @@ class State:
         return '\n'.join(''.join(row) for row in self.grid)
 
     def __eq__(self, other_state):
-        return hash(self) == hash(other_state)
+        return self.current_positions == other_state.current_positions
 
     def __hash__(self):
         return hash(str(self.current_positions))
@@ -127,9 +128,8 @@ class State:
 # Launch the search
 problem = SoftFlow.load(sys.argv[1])
 
-node = astar_search(problem, display=True)
+node = astar_search(problem)
 
-print(node.state.grid)
 # example of print
 path = node.path()
 
