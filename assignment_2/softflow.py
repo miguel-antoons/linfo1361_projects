@@ -1,8 +1,8 @@
-from search import *
-#from aima_python3.search import *
+#from search import *
+from aima_python3.search import *
 from copy import deepcopy
 import sys
-#from time import sleep
+import time
 
 #################
 # Problem class #
@@ -130,13 +130,16 @@ class State:
 # Launch the search
 problem = SoftFlow.load(sys.argv[1])
 
-node = astar_search(problem)
+start_timer = time.perf_counter()
+node = astar_search(problem, display=True)
+end_timer = time.perf_counter()
 
 # example of print
 path = node.path()
 
+print("* Execution time:\t", str(end_timer - start_timer))
 print('Number of moves: ', str(node.depth))
-for n in path:
-    # assuming that the _str_ function of state outputs the correct format
-    print(n.state)
-    print()
+# for n in path:
+#     # assuming that the _str_ function of state outputs the correct format
+#     print(n.state)
+#     print()
