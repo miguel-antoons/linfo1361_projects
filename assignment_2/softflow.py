@@ -1,8 +1,8 @@
-from search import *
-# from aima_python3.search import *
+# from search import *
+from aima_python3.search import *
 from copy import deepcopy
 import sys
-# import time
+import time
 
 #################
 # Problem class #
@@ -104,6 +104,8 @@ class SoftFlow(Problem):
                 + abs(self.goal[key][-1][1] - node.state.current_positions[key][1])
             )
 
+        # h -= node.state.n_goals
+
         return h
 
     def load(path):
@@ -122,8 +124,8 @@ class State:
         self.nbr = len(grid)
         self.nbc = len(grid[0])
         self.grid = grid
-        self.current_positions = dict() # current position of each cable
-        self.n_goals = 0 # number of goals reached
+        self.current_positions = dict()  # current position of each cable
+        self.n_goals = 0  # number of goals reached
 
     def __str__(self):
         return '\n'.join(''.join(row) for row in self.grid)
@@ -147,16 +149,16 @@ class State:
 # Launch the search
 problem = SoftFlow.load(sys.argv[1])
 
-# start_timer = time.perf_counter()
-node = astar_search(problem)
-# end_timer = time.perf_counter()
+start_timer = time.perf_counter()
+node = astar_search(problem, display=True)
+end_timer = time.perf_counter()
 
 # example of print
 path = node.path()
 
-# print("* Execution time:\t", str(end_timer - start_timer))
+print("* Execution time:\t", str(end_timer - start_timer))
 print('Number of moves: ', str(node.depth))
-for n in path:
-    # assuming that the _str_ function of state outputs the correct format
-    print(n.state)
-    print()
+# for n in path:
+#     # assuming that the _str_ function of state outputs the correct format
+#     print(n.state)
+#     print()
