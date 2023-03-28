@@ -27,7 +27,7 @@ class MyAgent(AlphaBetaAgent):
         for action in state.get_current_player_actions():
             new_state = state.copy()
             new_state.apply_action(action)
-            yield (action, new_state)
+            yield (action, new_state
 
     """
     The cutoff function returns true if the alpha-beta/minimax
@@ -47,10 +47,16 @@ class MyAgent(AlphaBetaAgent):
     """
     def evaluate(self, state):
         evaluation = 0
-        for position in state.cur_pos[state.cur_player]:
-            evaluation += len(state.adj_bridges_pos(position)) - len(state.adj_pawns_pos(position))
+        # for position in state.cur_pos[state.cur_player]:
+        #     evaluation += len(state.adj_bridges_pos(position)) - len(state.adj_pawns_pos(position))
 
-        for position in state.cur_pos[1 - state.cur_player]:
-            evaluation -= len(state.adj_bridges_pos(position)) - len(state.adj_pawns_pos(position))
+        # for position in state.cur_pos[1 - state.cur_player]:
+        #     evaluation -= len(state.adj_bridges_pos(position)) - len(state.adj_pawns_pos(position))
 
+        for pawn in range(3):
+            bridges = state.adj_bridges(1 - self.id, pawn)
+            for bridge in bridges:
+                if bridges[bridge] == False:
+                    evaluation += 1
+                    
         return evaluation
