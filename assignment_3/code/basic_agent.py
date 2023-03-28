@@ -21,18 +21,34 @@ class MyAgent(AlphaBetaAgent):
     state s.
     """
     def successors(self, state):
-        pass
+        actions = state.get_current_player_actions()
+        for action in actions:
+            new_state = state.copy()
+            new_state.apply_action(action)
+            yield action, new_state
+        
 
     """
     The cutoff function returns true if the alpha-beta/minimax
     search has to stop and false otherwise.
     """
     def cutoff(self, state, depth):
-        pass
+        if state.game_over():
+            return True
+        if depth == 1:
+            return True
+        return False
 
     """
     The evaluate function must return an integer value
     representing the utility function of the board.
     """
     def evaluate(self, state):
-        pass
+        number = 0
+        for pawn in range(3):
+            bridges = state.adj_bridges(1 - self.id, pawn)
+            for bridge in bridges:
+                if bridges[bridge] == False:
+                    number += 1
+                    
+        return number
