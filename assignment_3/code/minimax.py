@@ -19,6 +19,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 inf = float("inf")
 
+
 def search(state, player, prune=True):
     """Perform a MiniMax/AlphaBeta search and return the best action.
 

@@ -100,15 +100,15 @@ def play_game(init_state, names, players, total_time, display_gui):
 Get an action from player with a timeout.
 """
 def get_action_timed(player, state, last_action, time_left):
-	signal.signal(signal.SIGALRM, handle_timeout)
-	signal.setitimer(signal.ITIMER_REAL, time_left)
-	exe_time = time.time()
-	try:
-		action = player.get_action(state, last_action, time_left)
-	finally:
-		signal.setitimer(signal.ITIMER_REAL, 0)
-		exe_time = time.time() - exe_time
-	return action, exe_time
+    signal.signal(signal.SIGALRM, handle_timeout)
+    signal.setitimer(signal.ITIMER_REAL, time_left)
+    exe_time = time.time()
+    try:
+        action = player.get_action(state, last_action, time_left)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        exe_time = time.time() - exe_time
+    return action, exe_time
 
 
 """
