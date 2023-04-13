@@ -8,10 +8,9 @@ class MyAgent(AlphaBetaAgent):
     """
     Agent skeleton. Fill in the gaps.
     """
-    max_depth = 3
+    max_depth = 2
     n_round = -1
     steps = (2, 5, 8, 11, 13, 14, 15, 16, 17, 18, 19, 20)
-    link_weight = (-4, -1, 0, 3, 4)
     index = 0
 
     """
@@ -22,7 +21,7 @@ class MyAgent(AlphaBetaAgent):
         # DEBUG
         # if self.n_round > 0:
         #     raise Exception("History not empty")
-        if math.floor(self.n_round / self.steps[self.index]) == 1:
+        if self.n_round == self.steps[self.index]:
             self.index += 1
             self.max_depth += 1
 
@@ -37,19 +36,18 @@ class MyAgent(AlphaBetaAgent):
     state s.
     """
     def successors(self, state):
+        reversed = True
+        if state.cur_player != self.id:
+            reversed = False
+
         first_choice = Q.PriorityQueue()
         # second_choice = Q.PriorityQueue()
         # third_choice = Q.PriorityQueue()
         parent_enemy_bridges = 0
-        parent_bridges = 0
 
         # calculate number of enemy bridges for parent state
         for position in state.cur_pos[1 - state.cur_player]:
             parent_enemy_bridges += self.__no_adj_bridges(position, state)
-
-        # calculate number of bridges for parent state
-        for position in state.cur_pos[state.cur_player]:
-            parent_bridges += self.__no_adj_bridges(position, state)
 
         # for every possible action
         for action in state.get_current_player_actions():
@@ -76,9 +74,20 @@ class MyAgent(AlphaBetaAgent):
                 # print(f"  NO_ENEMY_BRIDGES : {no_enemy_bridges}")
                 # print(f"  PARENT_BRIDGES : {parent_enemy_bridges}")
                 # print("\n")
-                first_choice.put(Successor(action, new_state, parent_enemy_bridges, no_enemy_bridges, bridges))
+                first_choice.put(
+                    Successor(action, new_state, self.evaluate(new_state), reversed)
+                )
 
         while not first_choice.empty():
+            # choic = first_choice.get()
+            # if state.cur_player == self.id and last_evaluation < choic.evaluation:
+            #     print("    ALERT")
+
+            # print(f"  CHOICE : {choic.response()}, {self.evaluate(choic.state)}")
+
+            # last_evaluation = choic.evaluation
+            # print(f"  CHOICE : {choic}")
+            # breakpoint()
             yield first_choice.get().response()
 
     """
@@ -134,7 +143,15 @@ class MyAgent(AlphaBetaAgent):
                     no_pawns += 1
 
         return no_pawns
-    
+
+    def __no_escape(self, position, state):
+        no_escape = {}
+        no_escape['bridges'] = self.__no_adj_bridges(position, state)
+        no_escape['al_pawns'] = self.__no_adj_pawns(position, state, self.id)
+        no_escape['en_pawns'] = self.__no_adj_pawns(position, state, 1 - self.id)
+        no_escape['escapes'] = no_escape['bridges'] - no_escape['al_pawns'] - no_escape['en_pawns']
+        return no_escape
+
     def __no_adj_of_adj_bridges(self, adj_bridges, state, player):
         no_adj_of_adj = 0
         for adj_bridge in adj_bridges:
@@ -153,61 +170,147 @@ class MyAgent(AlphaBetaAgent):
 
         return no_adj_of_adj
 
-    """
-    The evaluate function must return an integer value
-    representing the utility function of the board.
-    """
     def evaluate(self, state):
         evaluation = 0
+        #(f"LAST ACTION : {state.history[-1]}")
+
+        # score of own pawns
         for position in state.cur_pos[self.id]:
-            adj_bridges = self.__no_adj_bridges(position, state)
-            evaluation += self.link_weight[adj_bridges]
-            evaluation -= self.__no_adj_pawns(position, state, self.id)
+            no_escapes = self.__no_escape(position, state)
+            # DEBUG
+            # print(f"{position} bridges : {no_escapes['bridges']}")
+            # print(f"{position} al_pawns : {no_escapes['al_pawns']}")
+            # print(f"{position} en_pawns : {no_escapes['en_pawns']}")
+            # print(f"{position} escapes : {no_escapes['escapes']}")
 
-            # if there are two or more evacuation bridges for the current pawn
-            # give a score of 2
-            if adj_bridges - self.__no_adj_pawns(position, state, 1 - self.id) >= 2:
-                evaluation += 2
-            else:
+            if no_escapes['bridges'] == 0:
+                evaluation -= 5
+            elif no_escapes['escapes'] == 0:
+                evaluation -= 3
+            elif no_escapes['escapes'] == 1:
                 evaluation -= 2
+            elif no_escapes['escapes'] == 4:
+                evaluation += 2
+            elif no_escapes['escapes'] == 2:
+                if no_escapes['en_pawns'] == 0:
+                    evaluation -= 1
+                # elif no_escapes['en_pawns'] == 1:
+                #     evaluation += 0
+                elif no_escapes['en_pawns'] == 2:
+                    evaluation += 2
+            else:
+                if no_escapes['en_pawns'] == 1:
+                    evaluation += 3
+                elif no_escapes['en_pawns'] == 0:
+                    evaluation += 1
 
+            # DEBUG
+            # print("KING EVALUATION: " + str(evaluation))
+            # print('\n')
+
+        # score of enemy pawns
         for position in state.cur_pos[1 - self.id]:
-            adj_bridges = self.__no_adj_bridges(position, state)
-            evaluation -= self.link_weight[adj_bridges]
-            evaluation += self.__no_adj_pawns(position, state, 1 - self.id)
+            no_escapes = self.__no_escape(position, state)
+            # DEBUG
+            # print(f"{position} bridges : {no_escapes['bridges']}")
+            # print(f"{position} al_pawns : {no_escapes['al_pawns']}")
+            # print(f"{position} en_pawns : {no_escapes['en_pawns']}")
+            # print(f"{position} escapes : {no_escapes['escapes']}")
 
-            # if there are two or more evacuation bridges for the current enemy's pawn
-            # give a score of -2
-            if adj_bridges - self.__no_adj_pawns(position, state, self.id) >= 2:
-                evaluation -= 2
-            else:
+            if no_escapes['bridges'] == 0:
+                evaluation += 5
+            elif no_escapes['escapes'] == 0:
+                evaluation += 3
+            elif no_escapes['escapes'] == 1:
                 evaluation += 2
+            elif no_escapes['escapes'] == 4:
+                evaluation -= 2
+            elif no_escapes['escapes'] == 2:
+                if no_escapes['al_pawns'] == 0:
+                    evaluation += 1
+                # elif no_escapes['en_pawns'] == 1:
+                #     evaluation -= 0
+                elif no_escapes['al_pawns'] == 2:
+                    evaluation -= 2
+            else:
+                if no_escapes['al_pawns'] == 1:
+                    evaluation -= 3
+                elif no_escapes['al_pawns'] == 0:
+                    evaluation -= 1
+
+            # DEBUG
+            # print("ENEMY EVALUATION: " + str(evaluation))
+            # print('\n')
 
         return evaluation
 
+    # """
+    # The evaluate function must return an integer value
+    # representing the utility function of the board.
+    # """
+    # def evaluate(self, state):
+    #     evaluation = 0
+    #     for position in state.cur_pos[self.id]:
+    #         adj_bridges = self.__no_adj_bridges(position, state)
+    #         evaluation += self.link_weight[adj_bridges]
+    #         evaluation -= self.__no_adj_pawns(position, state, self.id)
+
+    #         # if there are two or more evacuation bridges for the current pawn
+    #         # give a score of 2
+    #         if adj_bridges - self.__no_adj_pawns(position, state, 1 - self.id) >= 2:
+    #             evaluation += 2
+    #         else:
+    #             evaluation -= 2
+
+    #     for position in state.cur_pos[1 - self.id]:
+    #         adj_bridges = self.__no_adj_bridges(position, state)
+    #         evaluation -= self.link_weight[adj_bridges]
+    #         evaluation += self.__no_adj_pawns(position, state, 1 - self.id)
+
+    #         # if there are two or more evacuation bridges for the current enemy's pawn
+    #         # give a score of -2
+    #         if adj_bridges - self.__no_adj_pawns(position, state, self.id) >= 2:
+    #             evaluation -= 2
+    #         else:
+    #             evaluation += 2
+
+    #     return evaluation
+
 
 class Successor:
-    def __init__(self, action, state, parent_enemy_bridges, enemy_bridges, bridges):
-        self.parent_enemy_bridges = parent_enemy_bridges
-        self.enemy_bridges = enemy_bridges
+    def __init__(self, action, state, evaluation, reversed=True):
         self.action = action
         self.state = state
-        self.bridges = bridges
+        self.evaluation = evaluation
+        self.reversed = reversed
 
     def __lt__(self, other_successor):
-        if self.bridges > other_successor.bridges:
-            return True
+        if self.reversed:
+            return self.evaluation > other_successor.evaluation
+        return self.evaluation < other_successor.evaluation
 
-        if self.bridges == other_successor.bridges:
-            # if we removed a bridge between to enemy's pawn and the other successor did not
-            # then we want to choose the other successor
-            if (self.parent_enemy_bridges - self.enemy_bridges) == 2 and (other_successor.parent_enemy_bridges - other_successor.enemy_bridges) == 1:
-                return False
+    def __le__(self, other_successor):
+        if self.reversed:
+            return self.evaluation >= other_successor.evaluation
+        return self.evaluation <= other_successor.evaluation
 
-            if self.enemy_bridges < other_successor.enemy_bridges:
-                return True
+    def __eq__(self, other_successor):
+        """self == obj."""
+        return self.evaluation == other_successor.evaluation
 
-        return False
+    def __ne__(self, other_successor):
+        """self != obj."""
+        return self.evaluation != other_successor.evaluation
+
+    def __gt__(self, other_successor):
+        if self.reversed:
+            return self.evaluation < other_successor.evaluation
+        return self.evaluation > other_successor.evaluation
+
+    def __ge__(self, other_successor):
+        if reversed:
+            return self.evaluation <= other_successor.evaluation
+        return self.evaluation >= other_successor.evaluation
 
     def response(self):
         return (self.action, self.state)

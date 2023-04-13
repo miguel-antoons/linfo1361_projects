@@ -10,7 +10,7 @@ class GUIState():
         self.size = size
 
         # Ressourses
-        self.isle = pygame.image.load("resources/isle.png")
+        self.isle = pygame.image.load("./resources/isle.png")
         self.red_pawn = pygame.image.load("resources/pawn_red.png")
         self.green_pawn = pygame.image.load("resources/pawn_green.png")
         self.h_bridge = pygame.image.load("resources/bridge_h.png")
