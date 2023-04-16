@@ -1,48 +1,134 @@
 from agent import AlphaBetaAgent
 import minimax
-import math
+from pontu_state import PontuState
+# import time
 import queue as Q
+
+
+class Successor:
+    def __init__(self, action, state, evaluation, reversed=True):
+        self.action = action
+        self.state = state
+        self.evaluation = evaluation
+        self.reversed = reversed
+        self.children = Q.Queue()
+
+    def __lt__(self, other_successor) -> bool:
+        if self.reversed:
+            return self.evaluation > other_successor.evaluation
+        return self.evaluation < other_successor.evaluation
+
+    def __le__(self, other_successor) -> bool:
+        if self.reversed:
+            return self.evaluation >= other_successor.evaluation
+        return self.evaluation <= other_successor.evaluation
+
+    def __eq__(self, other_successor) -> bool:
+        """self == obj."""
+        return self.evaluation == other_successor.evaluation
+
+    def __ne__(self, other_successor) -> bool:
+        """self != obj."""
+        return self.evaluation != other_successor.evaluation
+
+    def __gt__(self, other_successor) -> bool:
+        if self.reversed:
+            return self.evaluation < other_successor.evaluation
+        return self.evaluation > other_successor.evaluation
+
+    def __ge__(self, other_successor) -> bool:
+        if reversed:
+            return self.evaluation <= other_successor.evaluation
+        return self.evaluation >= other_successor.evaluation
+
+    def response(self) -> tuple:
+        return (self.action, self.state)
+
+    def add_children(self, child) -> None:
+        self.children.put(child)
+
+    def get_children(self) -> Q.Queue:
+        return self.children.get()
+
+    def has_children(self) -> bool:
+        return not self.children.empty()
 
 
 class MyAgent(AlphaBetaAgent):
     """
     Agent skeleton. Fill in the gaps.
     """
-    max_depth = 2
+    max_depth = 4
     n_round = -1
-    steps = (2, 5, 8, 11, 13, 14, 15, 16, 17, 18, 19, 20)
+    link_weights = (-4, -3, 1, 4, 6)
+    steps = (3, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
     index = 0
+    start_successors: list[Successor] = []
+    next_candidates = {}
+    start_node: Successor = None
 
     """
     This is the skeleton of an agent to play the Tak game.
     """
-    def get_action(self, state, last_action, time_left):
+    def get_action(self, state: PontuState, last_action: tuple, time_left: int) -> tuple:
         self.n_round += 1
-        # DEBUG
-        # if self.n_round > 0:
-        #     raise Exception("History not empty")
+        self.last_hash = None
+
+        self.last_action = last_action
+        print(last_action)
+        self.__find_starter()
+
         if self.n_round == self.steps[self.index]:
             self.index += 1
             self.max_depth += 1
 
-        self.last_action = last_action
-
-        return minimax.search(state, self)
+        best_action = minimax.search(state, self)
+        # print("Got Here 1")
+        self.__find_candidate_nodes(best_action, state.copy())
+        print(self.start_successors)
+        return best_action
 
     """
-    TODO : sort results based on evaluation in order to improve speed?
     The successors function must return (or yield) a list of
     pairs (a, s) in which a is the action played to reach the
     state s.
     """
-    def successors(self, state):
+    def successors(self, state: PontuState) -> list[tuple]:
+        self.store_nodes(state)
         reversed = True
         if state.cur_player != self.id:
             reversed = False
 
-        first_choice = Q.PriorityQueue()
-        # second_choice = Q.PriorityQueue()
-        # third_choice = Q.PriorityQueue()
+        if self.start_node is not None and self.start_node.has_children():
+            # print("     HELLLO")
+            successors = self.start_node.get_children()
+        else:
+            # print("     HELLLO2")
+            successors = self.__get_worthy_children(state, reversed)
+
+        # print(f"LENGTH : {successors.qsize()}")
+        children = Q.Queue()
+        if len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action)):
+            # print("ADDING CHILDREN")
+            self.next_candidates[self.last_hash][-1].add_children(children)
+
+        counter = 0
+        while not successors.empty() and counter < 10:
+            if reversed:
+                counter += 1
+            temp = successors.get()
+            # print(temp.state.history)
+
+            if len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == (1 - self.id):
+                self.next_candidates[self.last_hash].append(temp)
+
+            if len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action)):
+                children.put(temp)
+
+            yield temp.response()
+
+    def __get_worthy_children(self, state: PontuState, reversed: bool) -> Q.PriorityQueue[Successor]:
+        worthy_children = Q.PriorityQueue()
         parent_enemy_bridges = 0
 
         # calculate number of enemy bridges for parent state
@@ -60,41 +146,18 @@ class MyAgent(AlphaBetaAgent):
             for position in new_state.cur_pos[new_state.cur_player]:
                 no_enemy_bridges += self.__no_adj_bridges(position, new_state)
 
-            # calculate number of bridges for new state
-            bridges = 0
-            for position in new_state.cur_pos[1 - new_state.cur_player]:
-                bridges += self.__no_adj_bridges(position, new_state)
-
             if no_enemy_bridges < parent_enemy_bridges:
-                # DEBUG
-                # print("ACCEPTED")
-                # print(new_state.cur_pos[self.id])
-                # print(f"  H_BRIDGES : {new_state.h_bridges}")
-                # print(f"  V_BRIDGES : {new_state.v_bridges}")
-                # print(f"  NO_ENEMY_BRIDGES : {no_enemy_bridges}")
-                # print(f"  PARENT_BRIDGES : {parent_enemy_bridges}")
-                # print("\n")
-                first_choice.put(
+                worthy_children.put(
                     Successor(action, new_state, self.evaluate(new_state), reversed)
                 )
 
-        while not first_choice.empty():
-            # choic = first_choice.get()
-            # if state.cur_player == self.id and last_evaluation < choic.evaluation:
-            #     print("    ALERT")
-
-            # print(f"  CHOICE : {choic.response()}, {self.evaluate(choic.state)}")
-
-            # last_evaluation = choic.evaluation
-            # print(f"  CHOICE : {choic}")
-            # breakpoint()
-            yield first_choice.get().response()
+        return worthy_children
 
     """
     The cutoff function returns true if the alpha-beta/minimax
     search has to stop and false otherwise.
     """
-    def cutoff(self, state, depth):
+    def cutoff(self, state: PontuState, depth: int) -> bool:
         if state.game_over():
             return True
         elif depth >= self.max_depth:
@@ -102,7 +165,66 @@ class MyAgent(AlphaBetaAgent):
 
         return False
 
-    def __no_adj_bridges(self, pos, state):
+    def evaluate(self, state) -> int:
+        evaluation = 0
+
+        # score of own pawns
+        for position in state.cur_pos[self.id]:
+            no_escapes = self.__no_escape(position, state)
+            evaluation += self.link_weights[no_escapes['escapes']] * 100
+            evaluation += self.link_weights[no_escapes['bridges']]
+
+            # if no_escapes['bridges'] == 0:
+            #     evaluation -= 10
+            # if no_escapes['escapes'] == 0:
+            #     evaluation -= 5
+            # elif no_escapes['escapes'] == 1:
+            #     evaluation -= 5
+            # elif no_escapes['escapes'] == 4:
+            #     evaluation += 2
+            # elif no_escapes['escapes'] == 2:
+            #     if no_escapes['en_pawns'] == 0:
+            #         evaluation -= 1
+            #     # elif no_escapes['en_pawns'] == 1:
+            #     #     evaluation += 0
+            #     # elif no_escapes['en_pawns'] >= 2:
+            #     #     evaluation += 2
+            # else:
+            #     if no_escapes['en_pawns'] == 1:
+            #         evaluation += 3
+            #     elif no_escapes['en_pawns'] == 0:
+            #         evaluation += 1
+
+        # score of enemy pawns
+        for position in state.cur_pos[1 - self.id]:
+            no_escapes = self.__no_escape(position, state)
+            evaluation -= self.link_weights[no_escapes['escapes']] * 100
+            evaluation -= self.link_weights[no_escapes['bridges']]
+
+            # if no_escapes['bridges'] == 0:
+            #     evaluation += 10
+            # if no_escapes['escapes'] == 0:
+            #     evaluation += 5
+            # elif no_escapes['escapes'] == 1:
+            #     evaluation += 5
+            # elif no_escapes['escapes'] == 4:
+            #     evaluation -= 2
+            # elif no_escapes['escapes'] == 2:
+            #     if no_escapes['al_pawns'] == 0:
+            #         evaluation += 1
+            #     # elif no_escapes['en_pawns'] == 1:
+            #     #     evaluation -= 0
+            #     # elif no_escapes['al_pawns'] >= 2:
+            #     #     evaluation -= 2
+            # else:
+            #     if no_escapes['al_pawns'] == 1:
+            #         evaluation -= 3
+            #     elif no_escapes['al_pawns'] == 0:
+            #         evaluation -= 1
+
+        return evaluation
+
+    def __no_adj_bridges(self, pos: tuple, state: PontuState) -> int:
         no_bridges = 0
         # Check west bridge
         if pos[0] >= 1 and state.h_bridges[pos[1]][pos[0] - 1]:
@@ -119,7 +241,7 @@ class MyAgent(AlphaBetaAgent):
 
         return no_bridges
 
-    def __no_adj_pawns(self, pos, state, player):
+    def __no_adj_pawns(self, pos: tuple, state: PontuState, player: int) -> int:
         no_pawns = 0
         # Check west island
         if pos[0] >= 1:
@@ -144,7 +266,7 @@ class MyAgent(AlphaBetaAgent):
 
         return no_pawns
 
-    def __no_escape(self, position, state):
+    def __no_escape(self, position: tuple, state: PontuState) -> object:
         no_escape = {}
         no_escape['bridges'] = self.__no_adj_bridges(position, state)
         no_escape['al_pawns'] = self.__no_adj_pawns(position, state, self.id)
@@ -152,165 +274,34 @@ class MyAgent(AlphaBetaAgent):
         no_escape['escapes'] = no_escape['bridges'] - no_escape['al_pawns'] - no_escape['en_pawns']
         return no_escape
 
-    def __no_adj_of_adj_bridges(self, adj_bridges, state, player):
-        no_adj_of_adj = 0
-        for adj_bridge in adj_bridges:
-            if adj_bridge is True:
-                if adj_bridge.key == 'NORTH':
-                    no_adj_of_adj += self.__no_adj_bridges((adj_bridge.x, adj_bridge.y - 1), state)
+    def store_nodes(self, state: PontuState) -> bool:
+        # print(self.last_action)
+        # print(state.history)
+        if len(state.history) > 1 and state.history[-2] == self.last_action:
+            self.last_hash = hash(str(state.history[-1]))
+            self.next_candidates[self.last_hash] = []
+            return True
 
-                if adj_bridge.key == 'SOUTH':
-                    no_adj_of_adj += self.__no_adj_bridges((adj_bridge.x, adj_bridge.y + 1), state)
+        return False
 
-                if adj_bridge.key == 'EAST':
-                    no_adj_of_adj += self.__no_adj_bridges((adj_bridge.x + 1, adj_bridge.y), state)
+    def __find_candidate_nodes(self, action: tuple, state: PontuState) -> None:
+        if not self.next_candidates:
+            return
 
-                if adj_bridge.key == 'WEST':
-                    no_adj_of_adj += self.__no_adj_bridges((adj_bridge.x - 1, adj_bridge.y), state)
+        state.apply_action(action)
+        self.start_successors = self.next_candidates[hash(str(state.history[-1]))]
+        self.next_candidates = {}
 
-        return no_adj_of_adj
+    def __find_starter(self) -> None:
+        self.start_node = None
 
-    def evaluate(self, state):
-        evaluation = 0
-        #(f"LAST ACTION : {state.history[-1]}")
+        if len(self.start_successors) == 0:
+            return
 
-        # score of own pawns
-        for position in state.cur_pos[self.id]:
-            no_escapes = self.__no_escape(position, state)
-            # DEBUG
-            # print(f"{position} bridges : {no_escapes['bridges']}")
-            # print(f"{position} al_pawns : {no_escapes['al_pawns']}")
-            # print(f"{position} en_pawns : {no_escapes['en_pawns']}")
-            # print(f"{position} escapes : {no_escapes['escapes']}")
+        for successor in self.start_successors:
+            print(successor.state.history)
+            if successor.state.history[-1] == self.last_action:
+                self.start_node = successor
+                return
 
-            if no_escapes['bridges'] == 0:
-                evaluation -= 5
-            elif no_escapes['escapes'] == 0:
-                evaluation -= 3
-            elif no_escapes['escapes'] == 1:
-                evaluation -= 2
-            elif no_escapes['escapes'] == 4:
-                evaluation += 2
-            elif no_escapes['escapes'] == 2:
-                if no_escapes['en_pawns'] == 0:
-                    evaluation -= 1
-                # elif no_escapes['en_pawns'] == 1:
-                #     evaluation += 0
-                elif no_escapes['en_pawns'] == 2:
-                    evaluation += 2
-            else:
-                if no_escapes['en_pawns'] == 1:
-                    evaluation += 3
-                elif no_escapes['en_pawns'] == 0:
-                    evaluation += 1
-
-            # DEBUG
-            # print("KING EVALUATION: " + str(evaluation))
-            # print('\n')
-
-        # score of enemy pawns
-        for position in state.cur_pos[1 - self.id]:
-            no_escapes = self.__no_escape(position, state)
-            # DEBUG
-            # print(f"{position} bridges : {no_escapes['bridges']}")
-            # print(f"{position} al_pawns : {no_escapes['al_pawns']}")
-            # print(f"{position} en_pawns : {no_escapes['en_pawns']}")
-            # print(f"{position} escapes : {no_escapes['escapes']}")
-
-            if no_escapes['bridges'] == 0:
-                evaluation += 5
-            elif no_escapes['escapes'] == 0:
-                evaluation += 3
-            elif no_escapes['escapes'] == 1:
-                evaluation += 2
-            elif no_escapes['escapes'] == 4:
-                evaluation -= 2
-            elif no_escapes['escapes'] == 2:
-                if no_escapes['al_pawns'] == 0:
-                    evaluation += 1
-                # elif no_escapes['en_pawns'] == 1:
-                #     evaluation -= 0
-                elif no_escapes['al_pawns'] == 2:
-                    evaluation -= 2
-            else:
-                if no_escapes['al_pawns'] == 1:
-                    evaluation -= 3
-                elif no_escapes['al_pawns'] == 0:
-                    evaluation -= 1
-
-            # DEBUG
-            # print("ENEMY EVALUATION: " + str(evaluation))
-            # print('\n')
-
-        return evaluation
-
-    # """
-    # The evaluate function must return an integer value
-    # representing the utility function of the board.
-    # """
-    # def evaluate(self, state):
-    #     evaluation = 0
-    #     for position in state.cur_pos[self.id]:
-    #         adj_bridges = self.__no_adj_bridges(position, state)
-    #         evaluation += self.link_weight[adj_bridges]
-    #         evaluation -= self.__no_adj_pawns(position, state, self.id)
-
-    #         # if there are two or more evacuation bridges for the current pawn
-    #         # give a score of 2
-    #         if adj_bridges - self.__no_adj_pawns(position, state, 1 - self.id) >= 2:
-    #             evaluation += 2
-    #         else:
-    #             evaluation -= 2
-
-    #     for position in state.cur_pos[1 - self.id]:
-    #         adj_bridges = self.__no_adj_bridges(position, state)
-    #         evaluation -= self.link_weight[adj_bridges]
-    #         evaluation += self.__no_adj_pawns(position, state, 1 - self.id)
-
-    #         # if there are two or more evacuation bridges for the current enemy's pawn
-    #         # give a score of -2
-    #         if adj_bridges - self.__no_adj_pawns(position, state, self.id) >= 2:
-    #             evaluation -= 2
-    #         else:
-    #             evaluation += 2
-
-    #     return evaluation
-
-
-class Successor:
-    def __init__(self, action, state, evaluation, reversed=True):
-        self.action = action
-        self.state = state
-        self.evaluation = evaluation
-        self.reversed = reversed
-
-    def __lt__(self, other_successor):
-        if self.reversed:
-            return self.evaluation > other_successor.evaluation
-        return self.evaluation < other_successor.evaluation
-
-    def __le__(self, other_successor):
-        if self.reversed:
-            return self.evaluation >= other_successor.evaluation
-        return self.evaluation <= other_successor.evaluation
-
-    def __eq__(self, other_successor):
-        """self == obj."""
-        return self.evaluation == other_successor.evaluation
-
-    def __ne__(self, other_successor):
-        """self != obj."""
-        return self.evaluation != other_successor.evaluation
-
-    def __gt__(self, other_successor):
-        if self.reversed:
-            return self.evaluation < other_successor.evaluation
-        return self.evaluation > other_successor.evaluation
-
-    def __ge__(self, other_successor):
-        if reversed:
-            return self.evaluation <= other_successor.evaluation
-        return self.evaluation >= other_successor.evaluation
-
-    def response(self):
-        return (self.action, self.state)
+        self.start_successors = []
