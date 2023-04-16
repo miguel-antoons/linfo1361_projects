@@ -63,7 +63,7 @@ class MyAgent(AlphaBetaAgent):
     link_weights = (-4, -3, 1, 4, 6)
     steps = (3, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
     index = 0
-    start_successors: list[Successor] = []
+    start_successors: list = []
     next_candidates = {}
     start_node: Successor = None
 
@@ -75,7 +75,6 @@ class MyAgent(AlphaBetaAgent):
         self.last_hash = None
 
         self.last_action = last_action
-        print(last_action)
         self.__find_starter()
 
         if self.n_round == self.steps[self.index]:
@@ -83,9 +82,7 @@ class MyAgent(AlphaBetaAgent):
             self.max_depth += 1
 
         best_action = minimax.search(state, self)
-        # print("Got Here 1")
         self.__find_candidate_nodes(best_action, state.copy())
-        print(self.start_successors)
         return best_action
 
     """
@@ -93,23 +90,19 @@ class MyAgent(AlphaBetaAgent):
     pairs (a, s) in which a is the action played to reach the
     state s.
     """
-    def successors(self, state: PontuState) -> list[tuple]:
+    def successors(self, state: PontuState) -> list:
         self.store_nodes(state)
         reversed = True
         if state.cur_player != self.id:
             reversed = False
 
         if self.start_node is not None and self.start_node.has_children():
-            # print("     HELLLO")
             successors = self.start_node.get_children()
         else:
-            # print("     HELLLO2")
             successors = self.__get_worthy_children(state, reversed)
 
-        # print(f"LENGTH : {successors.qsize()}")
         children = Q.Queue()
         if len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action)):
-            # print("ADDING CHILDREN")
             self.next_candidates[self.last_hash][-1].add_children(children)
 
         counter = 0
@@ -117,7 +110,6 @@ class MyAgent(AlphaBetaAgent):
             if reversed:
                 counter += 1
             temp = successors.get()
-            # print(temp.state.history)
 
             if len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == (1 - self.id):
                 self.next_candidates[self.last_hash].append(temp)
@@ -127,7 +119,7 @@ class MyAgent(AlphaBetaAgent):
 
             yield temp.response()
 
-    def __get_worthy_children(self, state: PontuState, reversed: bool) -> Q.PriorityQueue[Successor]:
+    def __get_worthy_children(self, state: PontuState, reversed: bool) -> Q.PriorityQueue:
         worthy_children = Q.PriorityQueue()
         parent_enemy_bridges = 0
 
@@ -275,8 +267,6 @@ class MyAgent(AlphaBetaAgent):
         return no_escape
 
     def store_nodes(self, state: PontuState) -> bool:
-        # print(self.last_action)
-        # print(state.history)
         if len(state.history) > 1 and state.history[-2] == self.last_action:
             self.last_hash = hash(str(state.history[-1]))
             self.next_candidates[self.last_hash] = []
@@ -299,7 +289,6 @@ class MyAgent(AlphaBetaAgent):
             return
 
         for successor in self.start_successors:
-            print(successor.state.history)
             if successor.state.history[-1] == self.last_action:
                 self.start_node = successor
                 return
