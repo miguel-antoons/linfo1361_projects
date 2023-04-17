@@ -42,7 +42,7 @@ class Successor:
         return self.evaluation >= other_successor.evaluation
 
     def response(self) -> tuple:
-        return (self.action, self.state)
+        return self.action, self.state
 
     def add_children(self, child) -> None:
         self.children.put(child)
@@ -70,6 +70,11 @@ class MyAgent(AlphaBetaAgent):
     """
     This is the skeleton of an agent to play the Tak game.
     """
+
+    def __init__(self):
+        self.last_action = None
+        self.last_hash = None
+
     def get_action(self, state: PontuState, last_action: tuple, time_left: int) -> tuple:
         self.n_round += 1
         self.last_hash = None
@@ -98,11 +103,12 @@ class MyAgent(AlphaBetaAgent):
 
         if self.start_node is not None and self.start_node.has_children():
             successors = self.start_node.get_children()
+            print("HELLO")
         else:
             successors = self.__get_worthy_children(state, reversed)
 
         children = Q.Queue()
-        if len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action)):
+        if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
             self.next_candidates[self.last_hash][-1].add_children(children)
 
         counter = 0
@@ -111,10 +117,10 @@ class MyAgent(AlphaBetaAgent):
                 counter += 1
             temp = successors.get()
 
-            if len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == (1 - self.id):
+            if len(state.history) == 1 or (len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
                 self.next_candidates[self.last_hash].append(temp)
 
-            if len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action)):
+            if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
                 children.put(temp)
 
             yield temp.response()
@@ -267,7 +273,7 @@ class MyAgent(AlphaBetaAgent):
         return no_escape
 
     def store_nodes(self, state: PontuState) -> bool:
-        if len(state.history) > 1 and state.history[-2] == self.last_action:
+        if len(state.history) == 1 or (len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
             self.last_hash = hash(str(state.history[-1]))
             self.next_candidates[self.last_hash] = []
             return True
