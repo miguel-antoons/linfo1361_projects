@@ -6,21 +6,16 @@ import queue as Q
 
 
 class Successor:
-    def __init__(self, action, state, evaluation, reversed=True):
+    def __init__(self, action, state, evaluation):
         self.action = action
         self.state = state
         self.evaluation = evaluation
-        self.reversed = reversed
         self.children = Q.Queue()
 
     def __lt__(self, other_successor) -> bool:
-        if self.reversed:
-            return self.evaluation > other_successor.evaluation
         return self.evaluation < other_successor.evaluation
 
     def __le__(self, other_successor) -> bool:
-        if self.reversed:
-            return self.evaluation >= other_successor.evaluation
         return self.evaluation <= other_successor.evaluation
 
     def __eq__(self, other_successor) -> bool:
@@ -32,13 +27,9 @@ class Successor:
         return self.evaluation != other_successor.evaluation
 
     def __gt__(self, other_successor) -> bool:
-        if self.reversed:
-            return self.evaluation < other_successor.evaluation
         return self.evaluation > other_successor.evaluation
 
     def __ge__(self, other_successor) -> bool:
-        if reversed:
-            return self.evaluation <= other_successor.evaluation
         return self.evaluation >= other_successor.evaluation
 
     def response(self) -> tuple:
@@ -54,22 +45,68 @@ class Successor:
         return not self.children.empty()
 
 
+class BestNodes:
+    def __init__(self, max_length: int, gt_first: bool = True):
+        self.max_length = max_length
+        self.gt_first = gt_first
+        self.nodes = []
+        self.max_value = float('-inf')
+        self.min_value = float('inf')
+
+    def insert(self, new_node: Successor) -> None:
+        if self.max_value == self.min_value and self.max_value == new_node.evaluation:
+            self.nodes.append(new_node)
+            return
+        elif len(self.nodes) < 10:
+            self.nodes.append(new_node)
+        else:
+            self.__replace(new_node)
+            self.__find_min()
+
+        if new_node.evaluation > self.max_value:
+            self.max_value = new_node.evaluation
+
+        if new_node.evaluation < self.min_value:
+            self.min_value = new_node.evaluation
+
+    def get(self) -> list:
+        self.nodes.sort(reverse=self.gt_first)
+
+        responses = []
+        for node in self.nodes:
+            responses.append(node.response())
+
+        return responses
+
+    def __replace(self, new_node: Successor) -> None:
+        if self.min_value == new_node.evaluation:
+            return
+
+        for node in self.nodes:
+            if node.evaluation == self.min_value:
+                self.nodes.remove(node)
+                self.nodes.append(new_node)
+                return
+
+    def __find_min(self) -> None:
+        self.min_value = float('inf')
+        for node in self.nodes:
+            if node.evaluation < self.min_value:
+                self.min_value = node.evaluation
+
+
 class MyAgent(AlphaBetaAgent):
     """
     Agent skeleton. Fill in the gaps.
     """
-    max_depth = 4
+    max_depth = 3
     n_round = -1
     link_weights = (-4, -3, 1, 4, 6)
-    steps = (3, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+    steps = (5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
     index = 0
     start_successors: list = []
     next_candidates = {}
     start_node: Successor = None
-
-    """
-    This is the skeleton of an agent to play the Tak game.
-    """
 
     def __init__(self):
         self.last_action = None
@@ -80,53 +117,60 @@ class MyAgent(AlphaBetaAgent):
         self.last_hash = None
 
         self.last_action = last_action
-        self.__find_starter()
+        # self.__find_starter()
 
         if self.n_round == self.steps[self.index]:
             self.index += 1
             self.max_depth += 1
 
         best_action = minimax.search(state, self)
-        self.__find_candidate_nodes(best_action, state.copy())
+        # self.__find_candidate_nodes(best_action, state.copy())
         return best_action
 
-    """
-    The successors function must return (or yield) a list of
-    pairs (a, s) in which a is the action played to reach the
-    state s.
-    """
     def successors(self, state: PontuState) -> list:
-        self.store_nodes(state)
-        reversed = True
+        """
+        The successors function must return (or yield) a list of
+        pairs (a, s) in which a is the action played to reach the
+        state s.
+        """
+        # self.store_nodes(state)
+        maximizing_player = True
         if state.cur_player != self.id:
-            reversed = False
+            maximizing_player = False
 
-        if self.start_node is not None and self.start_node.has_children():
-            successors = self.start_node.get_children()
-            print("HELLO")
-        else:
-            successors = self.__get_worthy_children(state, reversed)
+        successors = self.__get_worthy_children(state, maximizing_player)
 
-        children = Q.Queue()
-        if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
-            self.next_candidates[self.last_hash][-1].add_children(children)
+        return successors
 
-        counter = 0
-        while not successors.empty() and counter < 10:
-            if reversed:
-                counter += 1
-            temp = successors.get()
+        # for successor in successors:
+        #     yield successor
 
-            if len(state.history) == 1 or (len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
-                self.next_candidates[self.last_hash].append(temp)
+        # if self.start_node is not None and self.start_node.has_children():
+        #     successors = self.start_node.get_children()
+        #     print("HELLO")
+        # else:
+        #     successors = self.__get_worthy_children(state, maximizing_player)
+        #
+        # children = Q.Queue()
+        # if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
+        #     self.next_candidates[self.last_hash][-1].add_children(children)
 
-            if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
-                children.put(temp)
+        # counter = 0
+        # while not successors.empty() and counter < 10:
+        #     # if maximizing_player:
+        #     #     counter += 1
+        #     temp = successors.get()
+        #
+        #     # if len(state.history) == 1 or (len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
+        #     #     self.next_candidates[self.last_hash].append(temp)
+        #     #
+        #     # if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
+        #     #     children.put(temp)
+        #
+        #     yield temp.response()
 
-            yield temp.response()
-
-    def __get_worthy_children(self, state: PontuState, reversed: bool) -> Q.PriorityQueue:
-        worthy_children = Q.PriorityQueue()
+    def __get_worthy_children(self, state: PontuState, maximizing_player: bool) -> list:
+        worthy_children = BestNodes(max_length=10, gt_first=maximizing_player)
         parent_enemy_bridges = 0
 
         # calculate number of enemy bridges for parent state
@@ -145,17 +189,17 @@ class MyAgent(AlphaBetaAgent):
                 no_enemy_bridges += self.__no_adj_bridges(position, new_state)
 
             if no_enemy_bridges < parent_enemy_bridges:
-                worthy_children.put(
-                    Successor(action, new_state, self.evaluate(new_state), reversed)
+                worthy_children.insert(
+                    Successor(action, new_state, self.evaluate(new_state))
                 )
 
-        return worthy_children
+        return worthy_children.get()
 
-    """
-    The cutoff function returns true if the alpha-beta/minimax
-    search has to stop and false otherwise.
-    """
     def cutoff(self, state: PontuState, depth: int) -> bool:
+        """
+        The cutoff function returns true if the alpha-beta/minimax
+        search has to stop and false otherwise.
+        """
         if state.game_over():
             return True
         elif depth >= self.max_depth:
@@ -273,7 +317,8 @@ class MyAgent(AlphaBetaAgent):
         return no_escape
 
     def store_nodes(self, state: PontuState) -> bool:
-        if len(state.history) == 1 or (len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
+        if len(state.history) == 1 or (
+                len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
             self.last_hash = hash(str(state.history[-1]))
             self.next_candidates[self.last_hash] = []
             return True
