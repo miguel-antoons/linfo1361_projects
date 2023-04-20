@@ -2,7 +2,7 @@ from agent import AlphaBetaAgent
 import minimax
 from pontu_state import PontuState
 # import time
-import queue as Q
+# import queue as Q
 
 
 class Successor:
@@ -10,7 +10,7 @@ class Successor:
         self.action = action
         self.state = state
         self.evaluation = evaluation
-        self.children = Q.Queue()
+        # self.children = Q.Queue()
 
     def __lt__(self, other_successor) -> bool:
         return self.evaluation < other_successor.evaluation
@@ -35,14 +35,14 @@ class Successor:
     def response(self) -> tuple:
         return self.action, self.state
 
-    def add_children(self, child) -> None:
-        self.children.put(child)
-
-    def get_children(self) -> Q.Queue:
-        return self.children.get()
-
-    def has_children(self) -> bool:
-        return not self.children.empty()
+    # def add_children(self, child) -> None:
+    #     self.children.put(child)
+    #
+    # def get_children(self) -> Q.Queue:
+    #     return self.children.get()
+    #
+    # def has_children(self) -> bool:
+    #     return not self.children.empty()
 
 
 class BestNodes:
@@ -57,11 +57,11 @@ class BestNodes:
         if self.max_value == self.min_value and self.max_value == new_node.evaluation:
             self.nodes.append(new_node)
             return
-        elif len(self.nodes) < 10:
+        elif len(self.nodes) < self.max_length:
             self.nodes.append(new_node)
         else:
             self.__replace(new_node)
-            self.__find_min()
+            self.__find_least()
 
         if new_node.evaluation > self.max_value:
             self.max_value = new_node.evaluation
@@ -79,34 +79,45 @@ class BestNodes:
         return responses
 
     def __replace(self, new_node: Successor) -> None:
-        if self.min_value == new_node.evaluation:
+        if self.gt_first:
+            boundary = self.min_value
+        else:
+            boundary = self.max_value
+
+        if boundary == new_node.evaluation:
             return
 
-        for node in self.nodes:
-            if node.evaluation == self.min_value:
-                self.nodes.remove(node)
-                self.nodes.append(new_node)
+        for i in range(len(self.nodes)):
+            if self.nodes[i].evaluation == boundary:
+                self.nodes[i] = new_node
                 return
 
-    def __find_min(self) -> None:
-        self.min_value = float('inf')
-        for node in self.nodes:
-            if node.evaluation < self.min_value:
-                self.min_value = node.evaluation
+    def __find_least(self) -> None:
+        if self.gt_first:
+            self.min_value = float('inf')
+            for node in self.nodes:
+                if node.evaluation < self.min_value:
+                    self.min_value = node.evaluation
+        else:
+            self.max_value = float('-inf')
+            for node in self.nodes:
+                if node.evaluation > self.max_value:
+                    self.max_value = node.evaluation
 
 
 class MyAgent(AlphaBetaAgent):
     """
     Agent skeleton. Fill in the gaps.
     """
-    max_depth = 3
+    max_depth = 4
     n_round = -1
+    link_weights_2 = (-6, -2, 1, 3, 4)
     link_weights = (-4, -3, 1, 4, 6)
-    steps = (5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+    steps = (2, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
     index = 0
-    start_successors: list = []
-    next_candidates = {}
-    start_node: Successor = None
+    # start_successors: list = []
+    # next_candidates = {}
+    # start_node: Successor = None
 
     def __init__(self):
         self.last_action = None
@@ -130,7 +141,7 @@ class MyAgent(AlphaBetaAgent):
     def successors(self, state: PontuState) -> list:
         """
         The successors function must return (or yield) a list of
-        pairs (a, s) in which a is the action played to reach the
+        pairs (a, s) in which an is the action played to reach the
         state s.
         """
         # self.store_nodes(state)
@@ -142,40 +153,13 @@ class MyAgent(AlphaBetaAgent):
 
         return successors
 
-        # for successor in successors:
-        #     yield successor
-
-        # if self.start_node is not None and self.start_node.has_children():
-        #     successors = self.start_node.get_children()
-        #     print("HELLO")
-        # else:
-        #     successors = self.__get_worthy_children(state, maximizing_player)
-        #
-        # children = Q.Queue()
-        # if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
-        #     self.next_candidates[self.last_hash][-1].add_children(children)
-
-        # counter = 0
-        # while not successors.empty() and counter < 10:
-        #     # if maximizing_player:
-        #     #     counter += 1
-        #     temp = successors.get()
-        #
-        #     # if len(state.history) == 1 or (len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
-        #     #     self.next_candidates[self.last_hash].append(temp)
-        #     #
-        #     # if (len(state.history) == 2 and state.history[-1] != self.last_action) or (len(state.history) > 2 and ((state.cur_player == (1 - self.id) and state.history[-2] != self.last_action) or (state.cur_player == self.id and state.history[-1] != self.last_action))):
-        #     #     children.put(temp)
-        #
-        #     yield temp.response()
-
     def __get_worthy_children(self, state: PontuState, maximizing_player: bool) -> list:
-        worthy_children = BestNodes(max_length=10, gt_first=maximizing_player)
+        worthy_children = BestNodes(max_length=15, gt_first=maximizing_player)
         parent_enemy_bridges = 0
 
         # calculate number of enemy bridges for parent state
         for position in state.cur_pos[1 - state.cur_player]:
-            parent_enemy_bridges += self.__no_adj_bridges(position, state)
+            parent_enemy_bridges += self.no_adj_bridges(position, state)
 
         # for every possible action
         for action in state.get_current_player_actions():
@@ -186,7 +170,7 @@ class MyAgent(AlphaBetaAgent):
             # calculate number of enemy bridges for new state
             no_enemy_bridges = 0
             for position in new_state.cur_pos[new_state.cur_player]:
-                no_enemy_bridges += self.__no_adj_bridges(position, new_state)
+                no_enemy_bridges += self.no_adj_bridges(position, new_state)
 
             if no_enemy_bridges < parent_enemy_bridges:
                 worthy_children.insert(
@@ -214,7 +198,7 @@ class MyAgent(AlphaBetaAgent):
         for position in state.cur_pos[self.id]:
             no_escapes = self.__no_escape(position, state)
             evaluation += self.link_weights[no_escapes['escapes']] * 100
-            evaluation += self.link_weights[no_escapes['bridges']]
+            evaluation += self.link_weights_2[no_escapes['bridges']]
 
             # if no_escapes['bridges'] == 0:
             #     evaluation -= 10
@@ -241,7 +225,7 @@ class MyAgent(AlphaBetaAgent):
         for position in state.cur_pos[1 - self.id]:
             no_escapes = self.__no_escape(position, state)
             evaluation -= self.link_weights[no_escapes['escapes']] * 100
-            evaluation -= self.link_weights[no_escapes['bridges']]
+            evaluation -= self.link_weights_2[no_escapes['bridges']]
 
             # if no_escapes['bridges'] == 0:
             #     evaluation += 10
@@ -266,7 +250,8 @@ class MyAgent(AlphaBetaAgent):
 
         return evaluation
 
-    def __no_adj_bridges(self, pos: tuple, state: PontuState) -> int:
+    @staticmethod
+    def no_adj_bridges(pos: tuple, state: PontuState) -> int:
         no_bridges = 0
         # Check west bridge
         if pos[0] >= 1 and state.h_bridges[pos[1]][pos[0] - 1]:
@@ -283,7 +268,8 @@ class MyAgent(AlphaBetaAgent):
 
         return no_bridges
 
-    def __no_adj_pawns(self, pos: tuple, state: PontuState, player: int) -> int:
+    @staticmethod
+    def __no_adj_pawns(pos: tuple, state: PontuState, player: int) -> int:
         no_pawns = 0
         # Check west island
         if pos[0] >= 1:
@@ -308,40 +294,41 @@ class MyAgent(AlphaBetaAgent):
 
         return no_pawns
 
-    def __no_escape(self, position: tuple, state: PontuState) -> object:
-        no_escape = {}
-        no_escape['bridges'] = self.__no_adj_bridges(position, state)
-        no_escape['al_pawns'] = self.__no_adj_pawns(position, state, self.id)
-        no_escape['en_pawns'] = self.__no_adj_pawns(position, state, 1 - self.id)
+    def __no_escape(self, position: tuple, state: PontuState) -> dict:
+        no_escape = {
+            'bridges': self.no_adj_bridges(position, state),
+            'al_pawns': self.__no_adj_pawns(position, state, self.id),
+            'en_pawns': self.__no_adj_pawns(position, state, 1 - self.id)
+        }
         no_escape['escapes'] = no_escape['bridges'] - no_escape['al_pawns'] - no_escape['en_pawns']
         return no_escape
 
-    def store_nodes(self, state: PontuState) -> bool:
-        if len(state.history) == 1 or (
-                len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
-            self.last_hash = hash(str(state.history[-1]))
-            self.next_candidates[self.last_hash] = []
-            return True
-
-        return False
-
-    def __find_candidate_nodes(self, action: tuple, state: PontuState) -> None:
-        if not self.next_candidates:
-            return
-
-        state.apply_action(action)
-        self.start_successors = self.next_candidates[hash(str(state.history[-1]))]
-        self.next_candidates = {}
-
-    def __find_starter(self) -> None:
-        self.start_node = None
-
-        if len(self.start_successors) == 0:
-            return
-
-        for successor in self.start_successors:
-            if successor.state.history[-1] == self.last_action:
-                self.start_node = successor
-                return
-
-        self.start_successors = []
+    # def store_nodes(self, state: PontuState) -> bool:
+    #     if len(state.history) == 1 or (
+    #             len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
+    #         self.last_hash = hash(str(state.history[-1]))
+    #         self.next_candidates[self.last_hash] = []
+    #         return True
+    #
+    #     return False
+    #
+    # def __find_candidate_nodes(self, action: tuple, state: PontuState) -> None:
+    #     if not self.next_candidates:
+    #         return
+    #
+    #     state.apply_action(action)
+    #     self.start_successors = self.next_candidates[hash(str(state.history[-1]))]
+    #     self.next_candidates = {}
+    #
+    # def __find_starter(self) -> None:
+    #     self.start_node = None
+    #
+    #     if len(self.start_successors) == 0:
+    #         return
+    #
+    #     for successor in self.start_successors:
+    #         if successor.state.history[-1] == self.last_action:
+    #             self.start_node = successor
+    #             return
+    #
+    #     self.start_successors = []
