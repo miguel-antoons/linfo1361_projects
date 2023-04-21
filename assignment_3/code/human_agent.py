@@ -1,6 +1,7 @@
 import pygame
 from agent import Agent
 
+
 class MyAgent(Agent):
 	def __init__(self):
 		self.clock = pygame.time.Clock()

@@ -1,6 +1,7 @@
 from agent import AlphaBetaAgent
-import minimax
 from pontu_state import PontuState
+import time
+from typing import *
 # import time
 # import queue as Q
 
@@ -10,7 +11,7 @@ class Successor:
         self.action = action
         self.state = state
         self.evaluation = evaluation
-        # self.children = Q.Queue()
+        self.children = []
 
     def __lt__(self, other_successor) -> bool:
         return self.evaluation < other_successor.evaluation
@@ -45,6 +46,63 @@ class Successor:
     #     return not self.children.empty()
 
 
+def search(successor: Successor, player):
+    """Perform a MiniMax/AlphaBeta search and return the best action.
+
+    Arguments:
+    state -- initial state
+    player -- a concrete instance of class AlphaBetaPlayer
+    """
+    inf = float("inf")
+
+    def max_value(current_successor: Successor, alpha, beta, depth):
+        if player.cutoff(current_successor, depth):
+            return current_successor.evaluation, None
+        val = -inf
+        return_successor = None
+
+        if len(current_successor.children) == 0:
+            children = player.successors(current_successor)
+        else:
+            children = current_successor.children
+
+        for max_child in children:
+            v, _ = min_value(max_child, alpha, beta, depth + 1)
+            if v > val:
+                val = v
+                return_successor = max_child
+
+                if v >= beta:
+                    return v, max_child
+                alpha = max(alpha, v)
+        return val, return_successor
+
+    def min_value(current_successor, alpha, beta, depth):
+        if player.cutoff(current_successor, depth):
+            return current_successor.evaluation, None
+        val = inf
+        return_successor = None
+
+        if len(current_successor.children) == 0:
+            children = player.successors(current_successor)
+        else:
+            children = current_successor.children
+
+        for min_child in children:
+            v, _ = max_value(min_child, alpha, beta, depth + 1)
+            if v < val:
+                val = v
+                return_successor = min_child
+
+                if v <= alpha:
+                    return v, min_child
+                beta = min(beta, v)
+        return val, return_successor
+
+    _, best_successor = max_value(successor, -inf, inf, 0)
+    return best_successor
+
+
 class BestNodes:
     def __init__(self, max_length: int, gt_first: bool = True):
         self.max_length = max_length
@@ -59,6 +117,10 @@ class BestNodes:
             return
         elif len(self.nodes) < self.max_length:
             self.nodes.append(new_node)
+        elif self.gt_first and new_node.evaluation <= self.min_value:
+            return
+        elif not self.gt_first and new_node.evaluation >= self.max_value:
+            return
         else:
             self.__replace(new_node)
             self.__find_least()
@@ -72,11 +134,7 @@ class BestNodes:
     def get(self) -> list:
         self.nodes.sort(reverse=self.gt_first)
 
-        responses = []
-        for node in self.nodes:
-            responses.append(node.response())
-
-        return responses
+        return self.nodes
 
     def __replace(self, new_node: Successor) -> None:
         if self.gt_first:
@@ -109,15 +167,16 @@ class MyAgent(AlphaBetaAgent):
     """
     Agent skeleton. Fill in the gaps.
     """
-    max_depth = 3
+    max_depth = 1
+    game_time = 300 / 12
+    time_left = None
+    start_time = None
     n_round = -1
     link_weights_2 = (-6, -2, 1, 3, 4)
     link_weights = (-4, -3, 1, 4, 6)
-    steps = (2, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
-    index = 0
-    # start_successors: list = []
-    # next_candidates = {}
-    # start_node: Successor = None
+    next_round_successors = []
+    # steps = (6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+    # index = 0
 
     def __init__(self):
         self.last_action = None
@@ -125,20 +184,56 @@ class MyAgent(AlphaBetaAgent):
 
     def get_action(self, state: PontuState, last_action: tuple, time_left: int) -> tuple:
         self.n_round += 1
-        self.last_hash = None
+        self.max_depth = 2
+        # self.last_hash = None
+        self.time_left = time_left
+        self.start_time = time.time()
 
-        self.last_action = last_action
+        start_successor = self.__find_start_successor(state)
+
         # self.__find_starter()
 
-        if self.n_round == self.steps[self.index]:
-            self.index += 1
-            self.max_depth += 1
+        # if self.n_round == self.steps[self.index]:
+        #     self.index += 1
+        #     self.max_depth += 1
 
-        best_action = minimax.search(state, self)
+        return self.__get_best_action(state, start_successor)
         # self.__find_candidate_nodes(best_action, state.copy())
-        return best_action
 
-    def successors(self, state: PontuState) -> list:
+    def __find_start_successor(self, state: PontuState) -> Union[Successor, None]:
+        for successor in self.next_round_successors:
+            if successor.state.history[-1] == state.history[-1]:
+                return successor
+
+        return None
+
+    def __get_best_action(self, state: PontuState, start_successor: Union[Successor, None]) -> tuple:
+        best_action: Union[Successor, None] = None
+
+        if start_successor is not None:
+            first_successor = start_successor
+        else:
+            first_successor = Successor(None, state, self.evaluate(state))
+        same_counter = 0
+
+        while time.time() - self.start_time < self.game_time and same_counter < 5:
+            # print(self.max_depth)
+            self.max_depth += 1
+            temp_action = search(first_successor, self)
+
+            if time.time() - self.start_time < self.game_time:
+                best_action = temp_action
+
+            if best_action == temp_action:
+                same_counter += 1
+            else:
+                same_counter = 0
+
+        self.next_round_successors = best_action.children
+
+        return best_action.action
+
+    def successors(self, successor: Successor) -> list:
         """
         The successors function must return (or yield) a list of
         pairs (a, s) in which an is the action played to reach the
@@ -146,15 +241,16 @@ class MyAgent(AlphaBetaAgent):
         """
         # self.store_nodes(state)
         maximizing_player = True
-        if state.cur_player != self.id:
+        if successor.state.cur_player != self.id:
             maximizing_player = False
 
-        successors = self.__get_worthy_children(state, maximizing_player)
+        successors = self.__get_worthy_children(successor.state, maximizing_player)
+        successor.children = successors
 
         return successors
 
     def __get_worthy_children(self, state: PontuState, maximizing_player: bool) -> list:
-        worthy_children = BestNodes(max_length=15, gt_first=maximizing_player)
+        worthy_children = BestNodes(max_length=11, gt_first=maximizing_player)
         parent_enemy_bridges = 0
 
         # calculate number of enemy bridges for parent state
@@ -179,14 +275,16 @@ class MyAgent(AlphaBetaAgent):
 
         return worthy_children.get()
 
-    def cutoff(self, state: PontuState, depth: int) -> bool:
+    def cutoff(self, successor: Successor, depth: int) -> bool:
         """
         The cutoff function returns true if the alpha-beta/minimax
         search has to stop and false otherwise.
         """
-        if state.game_over():
+        if successor.state.game_over():
             return True
         elif depth >= self.max_depth:
+            return True
+        elif time.time() - self.start_time >= self.game_time:
             return True
 
         return False
@@ -197,56 +295,14 @@ class MyAgent(AlphaBetaAgent):
         # score of own pawns
         for position in state.cur_pos[self.id]:
             no_escapes = self.__no_escape(position, state)
-            evaluation += self.link_weights[no_escapes['escapes']] * 100
-            evaluation += self.link_weights_2[no_escapes['bridges']]
-
-            # if no_escapes['bridges'] == 0:
-            #     evaluation -= 10
-            # if no_escapes['escapes'] == 0:
-            #     evaluation -= 5
-            # elif no_escapes['escapes'] == 1:
-            #     evaluation -= 5
-            # elif no_escapes['escapes'] == 4:
-            #     evaluation += 2
-            # elif no_escapes['escapes'] == 2:
-            #     if no_escapes['en_pawns'] == 0:
-            #         evaluation -= 1
-            #     # elif no_escapes['en_pawns'] == 1:
-            #     #     evaluation += 0
-            #     # elif no_escapes['en_pawns'] >= 2:
-            #     #     evaluation += 2
-            # else:
-            #     if no_escapes['en_pawns'] == 1:
-            #         evaluation += 3
-            #     elif no_escapes['en_pawns'] == 0:
-            #         evaluation += 1
+            evaluation += self.link_weights[no_escapes['escapes']]
+            evaluation += self.link_weights_2[no_escapes['bridges']] * 100
 
         # score of enemy pawns
         for position in state.cur_pos[1 - self.id]:
             no_escapes = self.__no_escape(position, state)
-            evaluation -= self.link_weights[no_escapes['escapes']] * 100
-            evaluation -= self.link_weights_2[no_escapes['bridges']]
-
-            # if no_escapes['bridges'] == 0:
-            #     evaluation += 10
-            # if no_escapes['escapes'] == 0:
-            #     evaluation += 5
-            # elif no_escapes['escapes'] == 1:
-            #     evaluation += 5
-            # elif no_escapes['escapes'] == 4:
-            #     evaluation -= 2
-            # elif no_escapes['escapes'] == 2:
-            #     if no_escapes['al_pawns'] == 0:
-            #         evaluation += 1
-            #     # elif no_escapes['en_pawns'] == 1:
-            #     #     evaluation -= 0
-            #     # elif no_escapes['al_pawns'] >= 2:
-            #     #     evaluation -= 2
-            # else:
-            #     if no_escapes['al_pawns'] == 1:
-            #         evaluation -= 3
-            #     elif no_escapes['al_pawns'] == 0:
-            #         evaluation -= 1
+            evaluation -= self.link_weights[no_escapes['escapes']]
+            evaluation -= self.link_weights_2[no_escapes['bridges']] * 100
 
         return evaluation
 
@@ -302,33 +358,3 @@ class MyAgent(AlphaBetaAgent):
         }
         no_escape['escapes'] = no_escape['bridges'] - no_escape['al_pawns'] - no_escape['en_pawns']
         return no_escape
-
-    # def store_nodes(self, state: PontuState) -> bool:
-    #     if len(state.history) == 1 or (
-    #             len(state.history) > 1 and state.history[-2] == self.last_action and state.cur_player == 1 - self.id):
-    #         self.last_hash = hash(str(state.history[-1]))
-    #         self.next_candidates[self.last_hash] = []
-    #         return True
-    #
-    #     return False
-    #
-    # def __find_candidate_nodes(self, action: tuple, state: PontuState) -> None:
-    #     if not self.next_candidates:
-    #         return
-    #
-    #     state.apply_action(action)
-    #     self.start_successors = self.next_candidates[hash(str(state.history[-1]))]
-    #     self.next_candidates = {}
-    #
-    # def __find_starter(self) -> None:
-    #     self.start_node = None
-    #
-    #     if len(self.start_successors) == 0:
-    #         return
-    #
-    #     for successor in self.start_successors:
-    #         if successor.state.history[-1] == self.last_action:
-    #             self.start_node = successor
-    #             return
-    #
-    #     self.start_successors = []

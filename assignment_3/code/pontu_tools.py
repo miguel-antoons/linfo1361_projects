@@ -134,7 +134,10 @@ class TimerDisplay(Thread):
         beg_time = time.time()
         delta = self.times_left[self.cur_player] % 1
         self.board.show_timer(self.times_left)
-        pygame.display.flip()
+        try:
+            pygame.display.flip()
+        except:
+            pass
 
         clock = pygame.time.Clock()
         while not self.stopped[0] and self.times_left[self.cur_player] > 0:
@@ -142,5 +145,8 @@ class TimerDisplay(Thread):
             if time.time() - beg_time >= delta:
                 self.times_left[self.cur_player] -= 1
                 self.board.show_timer(self.times_left)
-                pygame.display.flip()
+                try:
+                    pygame.display.flip()
+                except:
+                    pass
                 delta += 1
