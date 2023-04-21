@@ -109,11 +109,11 @@ class MyAgent(AlphaBetaAgent):
     """
     Agent skeleton. Fill in the gaps.
     """
-    max_depth = 4
+    max_depth = 3
     n_round = -1
     link_weights_2 = (-6, -2, 1, 3, 4)
     link_weights = (-4, -3, 1, 4, 6)
-    steps = (2, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+    steps = (2, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
     index = 0
     # start_successors: list = []
     # next_candidates = {}
