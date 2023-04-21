@@ -168,7 +168,7 @@ class MyAgent(AlphaBetaAgent):
     Agent skeleton. Fill in the gaps.
     """
     max_depth = 1
-    game_time = 300 / 12
+    game_time = 220 / 12
     time_left = None
     start_time = None
     n_round = -1
@@ -184,6 +184,7 @@ class MyAgent(AlphaBetaAgent):
 
     def get_action(self, state: PontuState, last_action: tuple, time_left: int) -> tuple:
         self.n_round += 1
+        print(f"Round {self.n_round}")
         self.max_depth = 2
         # self.last_hash = None
         self.time_left = time_left

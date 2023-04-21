@@ -168,7 +168,7 @@ class MyAgent(AlphaBetaAgent):
     Agent skeleton. Fill in the gaps.
     """
     max_depth = 1
-    game_time = 300 / 12
+    game_time = 220 / 12
     time_left = None
     start_time = None
     n_round = -1
@@ -296,13 +296,13 @@ class MyAgent(AlphaBetaAgent):
         for position in state.cur_pos[self.id]:
             no_escapes = self.__no_escape(position, state)
             evaluation += self.link_weights[no_escapes['escapes']]
-            evaluation += self.link_weights_2[no_escapes['bridges']] * 100
+            evaluation += self.link_weights_2[no_escapes['bridges']]
 
         # score of enemy pawns
         for position in state.cur_pos[1 - self.id]:
             no_escapes = self.__no_escape(position, state)
             evaluation -= self.link_weights[no_escapes['escapes']]
-            evaluation -= self.link_weights_2[no_escapes['bridges']] * 100
+            evaluation -= self.link_weights_2[no_escapes['bridges']]
 
         return evaluation
 
