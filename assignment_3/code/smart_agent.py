@@ -168,7 +168,7 @@ class MyAgent(AlphaBetaAgent):
     Agent skeleton. Fill in the gaps.
     """
     max_depth = 1
-    game_time = 220 / 12
+    game_time = 220 / 11
     time_left = None
     start_time = None
     n_round = -1
@@ -178,13 +178,9 @@ class MyAgent(AlphaBetaAgent):
     # steps = (6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
     # index = 0
 
-    def __init__(self):
-        self.last_action = None
-        self.last_hash = None
-
     def get_action(self, state: PontuState, last_action: tuple, time_left: int) -> tuple:
         self.n_round += 1
-        self.max_depth = 2
+        self.max_depth = 3
         # self.last_hash = None
         self.time_left = time_left
         self.start_time = time.time()
@@ -212,13 +208,15 @@ class MyAgent(AlphaBetaAgent):
 
         if start_successor is not None:
             first_successor = start_successor
+            #("INSANE")
         else:
             first_successor = Successor(None, state, self.evaluate(state))
         same_counter = 0
 
-        while time.time() - self.start_time < self.game_time and same_counter < 5:
+        while time.time() - self.start_time < self.game_time and same_counter < 4:
             # print(self.max_depth)
             self.max_depth += 1
+            # print(self.max_depth)
             temp_action = search(first_successor, self)
 
             if time.time() - self.start_time < self.game_time:
@@ -250,7 +248,7 @@ class MyAgent(AlphaBetaAgent):
         return successors
 
     def __get_worthy_children(self, state: PontuState, maximizing_player: bool) -> list:
-        worthy_children = BestNodes(max_length=11, gt_first=maximizing_player)
+        worthy_children = BestNodes(max_length=16, gt_first=maximizing_player)
         parent_enemy_bridges = 0
 
         # calculate number of enemy bridges for parent state
@@ -295,13 +293,13 @@ class MyAgent(AlphaBetaAgent):
         # score of own pawns
         for position in state.cur_pos[self.id]:
             no_escapes = self.__no_escape(position, state)
-            evaluation += self.link_weights[no_escapes['escapes']]
+            evaluation += self.link_weights_2[no_escapes['escapes']]
             evaluation += self.link_weights_2[no_escapes['bridges']]
 
         # score of enemy pawns
         for position in state.cur_pos[1 - self.id]:
             no_escapes = self.__no_escape(position, state)
-            evaluation -= self.link_weights[no_escapes['escapes']]
+            evaluation -= self.link_weights_2[no_escapes['escapes']]
             evaluation -= self.link_weights_2[no_escapes['bridges']]
 
         return evaluation
@@ -325,7 +323,7 @@ class MyAgent(AlphaBetaAgent):
         return no_bridges
 
     @staticmethod
-    def __no_adj_pawns(pos: tuple, state: PontuState, player: int) -> int:
+    def no_adj_pawns(pos: tuple, state: PontuState, player: int) -> int:
         no_pawns = 0
         # Check west island
         if pos[0] >= 1:
@@ -353,8 +351,8 @@ class MyAgent(AlphaBetaAgent):
     def __no_escape(self, position: tuple, state: PontuState) -> dict:
         no_escape = {
             'bridges': self.no_adj_bridges(position, state),
-            'al_pawns': self.__no_adj_pawns(position, state, self.id),
-            'en_pawns': self.__no_adj_pawns(position, state, 1 - self.id)
+            'al_pawns': self.no_adj_pawns(position, state, self.id),
+            'en_pawns': self.no_adj_pawns(position, state, 1 - self.id)
         }
         no_escape['escapes'] = no_escape['bridges'] - no_escape['al_pawns'] - no_escape['en_pawns']
         return no_escape
