@@ -326,12 +326,14 @@ class MyAgent(AlphaBetaAgent):
             no_escapes = self.__no_escape(position, state)
             evaluation += self.link_weights_2[no_escapes['escapes']]
             evaluation += self.link_weights_2[no_escapes['bridges']]
+            evaluation += no_escapes['adj_of_adj_bridges']
 
         # score of enemy pawns
         for position in state.cur_pos[1 - self.id]:
             no_escapes = self.__no_escape(position, state)
             evaluation -= self.link_weights_2[no_escapes['escapes']]
             evaluation -= self.link_weights_2[no_escapes['bridges']]
+            evaluation -= no_escapes['adj_of_adj_bridges']
 
         return evaluation
 
@@ -378,10 +380,34 @@ class MyAgent(AlphaBetaAgent):
                     no_pawns += 1
 
         return no_pawns
+    
+       # number of adjacent bridges of adjacent bridges
+    def no_adj_of_adj_bridges(self, pos: tuple, state: PontuState) -> int:
+        no_adj_of_adj_bridges = 0
+        no_bridges = 0
+        # Check west bridge
+        if pos[0] >= 1 and state.h_bridges[pos[1]][pos[0] - 1]:
+            current_pos = (pos[0] - 1, pos[1])
+            no_bridges += self.no_adj_bridges(current_pos, state)
+        # Check north bridge
+        if pos[1] >= 1 and state.v_bridges[pos[1] - 1][pos[0]]:
+            current_pos = (pos[0], pos[1] - 1)
+            no_bridges += self.no_adj_bridges(current_pos, state)
+        # Check east bridge
+        if pos[0] < state.size - 1 and state.h_bridges[pos[1]][pos[0]]:
+            current_pos = (pos[0] + 1, pos[1])
+            no_bridges += self.no_adj_bridges(current_pos, state)
+        # Check south bridge
+        if pos[1] < state.size - 1 and state.v_bridges[pos[1]][pos[0]]:
+            current_pos = (pos[0], pos[1] + 1)
+            no_bridges += self.no_adj_bridges(current_pos, state)
+
+        return no_adj_of_adj_bridges 
 
     def __no_escape(self, position: tuple, state: PontuState) -> dict:
         no_escape = {
             'bridges': self.no_adj_bridges(position, state),
+            'adj_of_adj_bridges': self.no_adj_of_adj_bridges(position, state),
             'al_pawns': self.no_adj_pawns(position, state, self.id),
             'en_pawns': self.no_adj_pawns(position, state, 1 - self.id)
         }

@@ -1,0 +1,18 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "old vs IA",
+            "type": "python",
+            "request": "launch",
+            "program": "pontu_play.py",
+            "args": ["-ai0", "smart_agent", "-ai1", "smart_agent_2", "-f", "1", "-g", "true"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/assignment_3/code"
+        }
+    ]
+}
