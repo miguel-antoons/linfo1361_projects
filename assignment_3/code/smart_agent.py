@@ -167,31 +167,31 @@ class MyAgent(AlphaBetaAgent):
     """
     Agent skeleton. Fill in the gaps.
     """
-    max_depth = 1
-    game_time = 220 / 11
-    time_left = None
-    start_time = None
-    n_round = -1
-    link_weights_2 = (-6, -2, 1, 3, 4)
-    link_weights = (-4, -3, 1, 4, 6)
-    next_round_successors = []
-    # steps = (6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
-    # index = 0
+
+    def __init__(self):
+        super().__init__()
+        self.max_depth = 1
+        self.max_length = 16
+        self.game_time = 0
+        self.divisor = 11
+        self.time_left = None
+        self.start_time = None
+        self.n_round = -1
+        self.link_weights_2 = (-6, -2, 1, 3, 4)
+        self.link_weights = (-4, -3, 1, 4, 6)
+        self.next_round_successors = []
 
     def get_action(self, state: PontuState, last_action: tuple, time_left: int) -> tuple:
         self.n_round += 1
-        self.max_depth = 3
+        self.max_depth = 2
         # self.last_hash = None
         self.time_left = time_left
+        self.game_time = time_left / self.divisor
+        if self.divisor > 1:
+            self.divisor -= 1
         self.start_time = time.time()
 
         start_successor = self.__find_start_successor(state)
-
-        # self.__find_starter()
-
-        # if self.n_round == self.steps[self.index]:
-        #     self.index += 1
-        #     self.max_depth += 1
 
         return self.__get_best_action(state, start_successor)
         # self.__find_candidate_nodes(best_action, state.copy())
@@ -208,24 +208,35 @@ class MyAgent(AlphaBetaAgent):
 
         if start_successor is not None:
             first_successor = start_successor
-            #("INSANE")
         else:
             first_successor = Successor(None, state, self.evaluate(state))
         same_counter = 0
 
-        while time.time() - self.start_time < self.game_time and same_counter < 4:
-            # print(self.max_depth)
+        elapsed_time = time.time() - self.start_time
+        time_needed_for_next_depth = 0
+
+        while elapsed_time < self.game_time and same_counter < 4 and time_needed_for_next_depth < self.game_time - elapsed_time:
             self.max_depth += 1
-            # print(self.max_depth)
+            print(self.max_depth)
+            # get the best action and store it in a temporary variable
             temp_action = search(first_successor, self)
 
-            if time.time() - self.start_time < self.game_time:
-                best_action = temp_action
-
-            if best_action == temp_action:
+            # if the current best action is the same as the previous one, increase the counter
+            if best_action is not None and best_action == temp_action:
                 same_counter += 1
             else:
                 same_counter = 0
+
+            temp_elapsed_time = elapsed_time
+            elapsed_time = time.time() - self.start_time
+            time_for_last_depth = elapsed_time - temp_elapsed_time
+            no_calculated_nodes = self.max_length ** self.max_depth
+            time_per_node = time_for_last_depth / no_calculated_nodes
+            time_needed_for_next_depth = time_per_node * (self.max_length ** (self.max_depth + 1) - no_calculated_nodes)
+
+            # if the search was not interrupted, update the best action
+            if elapsed_time < self.game_time:
+                best_action = temp_action
 
         self.next_round_successors = best_action.children
 
@@ -248,30 +259,50 @@ class MyAgent(AlphaBetaAgent):
         return successors
 
     def __get_worthy_children(self, state: PontuState, maximizing_player: bool) -> list:
-        worthy_children = BestNodes(max_length=16, gt_first=maximizing_player)
-        parent_enemy_bridges = 0
+        worthy_children = BestNodes(max_length=self.max_length, gt_first=maximizing_player)
+        # parent_enemy_bridges = 0
 
-        # calculate number of enemy bridges for parent state
-        for position in state.cur_pos[1 - state.cur_player]:
-            parent_enemy_bridges += self.no_adj_bridges(position, state)
+        # # calculate number of enemy bridges for parent state
+        # for position in state.cur_pos[1 - state.cur_player]:
+        #     parent_enemy_bridges += self.no_adj_bridges(position, state)
 
         # for every possible action
         for action in state.get_current_player_actions():
-            # create a new state
-            new_state = state.copy()
-            new_state.apply_action(action)
-
-            # calculate number of enemy bridges for new state
-            no_enemy_bridges = 0
-            for position in new_state.cur_pos[new_state.cur_player]:
-                no_enemy_bridges += self.no_adj_bridges(position, new_state)
-
-            if no_enemy_bridges < parent_enemy_bridges:
+            # # create a new state
+            # new_state = state.copy()
+            # new_state.apply_action(action)
+            #
+            # # calculate number of enemy bridges for new state
+            # no_enemy_bridges = 0
+            # for position in new_state.cur_pos[new_state.cur_player]:
+            #     no_enemy_bridges += self.no_adj_bridges(position, new_state)
+            #
+            # if no_enemy_bridges < parent_enemy_bridges:
+            if self.__is_enemy_bridge(state.cur_player, (action[-3], action[-2], action[-1]), state):
+                new_state = state.copy()
+                new_state.apply_action(action)
                 worthy_children.insert(
                     Successor(action, new_state, self.evaluate(new_state))
                 )
 
         return worthy_children.get()
+
+    @staticmethod
+    def __is_enemy_bridge(player: int, bridge_pos: tuple, state: PontuState) -> bool:
+        bridge_position = (bridge_pos[1], bridge_pos[2])
+        for position in state.cur_pos[1 - player]:
+            if (bridge_pos[1], bridge_pos[2]) == position:
+                return True
+
+            position_v = (position[0], position[1] - 1)
+            if bridge_pos[0] == 'v' and bridge_position == position_v:
+                return True
+
+            position_h = (position[0] - 1, position[1])
+            if bridge_pos[0] == 'h' and bridge_position == position_h:
+                return True
+
+        return False
 
     def cutoff(self, successor: Successor, depth: int) -> bool:
         """
