@@ -169,7 +169,6 @@ class MyAgent(AlphaBetaAgent):
     """
 
     def __init__(self):
-        super().__init__()
         self.max_depth = 1
         self.max_length = 16
         self.game_time = 0
@@ -187,7 +186,7 @@ class MyAgent(AlphaBetaAgent):
         # self.last_hash = None
         self.time_left = time_left
         self.game_time = time_left / self.divisor
-        if self.divisor > 1:
+        if self.divisor > 2:
             self.divisor -= 1
         self.start_time = time.time()
 
@@ -215,9 +214,9 @@ class MyAgent(AlphaBetaAgent):
         elapsed_time = time.time() - self.start_time
         time_needed_for_next_depth = 0
 
-        while elapsed_time < self.game_time and same_counter < 4 and time_needed_for_next_depth < self.game_time - elapsed_time:
+        while same_counter < 4 and time_needed_for_next_depth < self.game_time - elapsed_time:
             self.max_depth += 1
-            print(self.max_depth)
+            # print(self.max_depth)
             # get the best action and store it in a temporary variable
             temp_action = search(first_successor, self)
 
@@ -260,24 +259,9 @@ class MyAgent(AlphaBetaAgent):
 
     def __get_worthy_children(self, state: PontuState, maximizing_player: bool) -> list:
         worthy_children = BestNodes(max_length=self.max_length, gt_first=maximizing_player)
-        # parent_enemy_bridges = 0
-
-        # # calculate number of enemy bridges for parent state
-        # for position in state.cur_pos[1 - state.cur_player]:
-        #     parent_enemy_bridges += self.no_adj_bridges(position, state)
 
         # for every possible action
         for action in state.get_current_player_actions():
-            # # create a new state
-            # new_state = state.copy()
-            # new_state.apply_action(action)
-            #
-            # # calculate number of enemy bridges for new state
-            # no_enemy_bridges = 0
-            # for position in new_state.cur_pos[new_state.cur_player]:
-            #     no_enemy_bridges += self.no_adj_bridges(position, new_state)
-            #
-            # if no_enemy_bridges < parent_enemy_bridges:
             if self.__is_enemy_bridge(state.cur_player, (action[-3], action[-2], action[-1]), state):
                 new_state = state.copy()
                 new_state.apply_action(action)
@@ -326,14 +310,14 @@ class MyAgent(AlphaBetaAgent):
             no_escapes = self.__no_escape(position, state)
             evaluation += self.link_weights_2[no_escapes['escapes']]
             evaluation += self.link_weights_2[no_escapes['bridges']]
-            evaluation += no_escapes['adj_of_adj_bridges']
+            # evaluation += no_escapes['adj_of_adj_bridges']
 
         # score of enemy pawns
         for position in state.cur_pos[1 - self.id]:
             no_escapes = self.__no_escape(position, state)
             evaluation -= self.link_weights_2[no_escapes['escapes']]
             evaluation -= self.link_weights_2[no_escapes['bridges']]
-            evaluation -= no_escapes['adj_of_adj_bridges']
+            # evaluation -= no_escapes['adj_of_adj_bridges']
 
         return evaluation
 
@@ -381,33 +365,46 @@ class MyAgent(AlphaBetaAgent):
 
         return no_pawns
     
-       # number of adjacent bridges of adjacent bridges
+    # number of adjacent bridges of adjacent bridges
     def no_adj_of_adj_bridges(self, pos: tuple, state: PontuState) -> int:
-        no_adj_of_adj_bridges = 0
         no_bridges = 0
-        # Check west bridge
-        if pos[0] >= 1 and state.h_bridges[pos[1]][pos[0] - 1]:
-            current_pos = (pos[0] - 1, pos[1])
-            no_bridges += self.no_adj_bridges(current_pos, state)
-        # Check north bridge
-        if pos[1] >= 1 and state.v_bridges[pos[1] - 1][pos[0]]:
-            current_pos = (pos[0], pos[1] - 1)
-            no_bridges += self.no_adj_bridges(current_pos, state)
-        # Check east bridge
-        if pos[0] < state.size - 1 and state.h_bridges[pos[1]][pos[0]]:
-            current_pos = (pos[0] + 1, pos[1])
-            no_bridges += self.no_adj_bridges(current_pos, state)
-        # Check south bridge
-        if pos[1] < state.size - 1 and state.v_bridges[pos[1]][pos[0]]:
-            current_pos = (pos[0], pos[1] + 1)
-            no_bridges += self.no_adj_bridges(current_pos, state)
+        possible_bridges = [
+            (pos[0] - 1, pos[1]),
+            (pos[0], pos[1] - 1),
+            (pos[0] + 1, pos[1]),
+            (pos[0], pos[1] + 1)
+        ]
+        test = [True, True, True, True]
 
-        return no_adj_of_adj_bridges 
+        for position in state.cur_pos[self.id]:
+            for i, possible_bridge in enumerate(possible_bridges):
+                if possible_bridge == position:
+                    test[i] = False
+
+        for position in state.cur_pos[1 - self.id]:
+            for i, possible_bridge in enumerate(possible_bridges):
+                if possible_bridge == position:
+                    test[i] = False
+
+        # Check west bridge
+        if test[0] and pos[0] >= 1 and state.h_bridges[pos[1]][pos[0] - 1]:
+            no_bridges += self.no_adj_bridges(possible_bridges[0], state)
+        # Check north bridge
+        if test[1] and pos[1] >= 1 and state.v_bridges[pos[1] - 1][pos[0]]:
+            no_bridges += self.no_adj_bridges(possible_bridges[1], state)
+        # Check east bridge
+        if test[2] and pos[0] < state.size - 1 and state.h_bridges[pos[1]][pos[0]]:
+            no_bridges += self.no_adj_bridges(possible_bridges[2], state)
+        # Check south bridge
+        if test[3] and pos[1] < state.size - 1 and state.v_bridges[pos[1]][pos[0]]:
+            no_bridges += self.no_adj_bridges(possible_bridges[3], state)
+
+        return no_bridges
 
     def __no_escape(self, position: tuple, state: PontuState) -> dict:
         no_escape = {
             'bridges': self.no_adj_bridges(position, state),
-            'adj_of_adj_bridges': self.no_adj_of_adj_bridges(position, state),
+            # 'adj_of_adj_bridges': self.no_adj_of_adj_bridges(position, state),
             'al_pawns': self.no_adj_pawns(position, state, self.id),
             'en_pawns': self.no_adj_pawns(position, state, 1 - self.id)
         }
