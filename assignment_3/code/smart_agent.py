@@ -109,12 +109,13 @@ class MyAgent(AlphaBetaAgent):
         self.max_depth = 1
         self.max_length = 11
         self.game_time = 0
-        self.divisor = 10
+        self.divisor = 9
         self.time_left = None
         self.start_time = None
         self.link_weights_2 = (-6, -2, 1, 3, 4)
         self.link_weights = (-4, -3, 1, 4, 6)
         self.next_round_successors = []
+        self.name = "Group 102"
 
     def get_action(self, state: PontuState, last_action: tuple, time_left: int) -> tuple:
         self.max_depth = 2
@@ -258,13 +259,12 @@ class MyAgent(AlphaBetaAgent):
             # evaluation += self.link_weights_2[no_escapes['escapes']]
             evaluation += 2 * self.link_weights[no_escapes['bridges']]
             evaluation += no_escapes['adj_of_adj_bridges']
-            evaluation -= 0.5 * no_escapes['en_pawns']
 
         # score of enemy pawns
         for position in state.cur_pos[1 - self.id]:
             no_escapes = self.__no_escape(position, state)
             # evaluation -= self.link_weights_2[no_escapes['escapes']]
-            evaluation -= 2 * self.link_weights[no_escapes['escapes']]
+            evaluation -= 2 * self.link_weights[no_escapes['bridges']]
             evaluation -= no_escapes['adj_of_adj_bridges']
 
         return evaluation
@@ -357,8 +357,8 @@ class MyAgent(AlphaBetaAgent):
         no_escape = {
             'bridges': self.no_adj_bridges(position, state),
             'adj_of_adj_bridges': self.no_adj_of_adj_bridges(position, state),
-            'al_pawns': self.no_adj_pawns(position, state, self.id),
-            'en_pawns': self.no_adj_pawns(position, state, 1 - self.id)
+            # 'al_pawns': self.no_adj_pawns(position, state, self.id),
+            # 'en_pawns': self.no_adj_pawns(position, state, 1 - self.id)
         }
-        no_escape['escapes'] = no_escape['bridges'] - no_escape['al_pawns'] - no_escape['en_pawns']
+        # no_escape['escapes'] = no_escape['bridges'] - no_escape['al_pawns'] - no_escape['en_pawns']
         return no_escape
