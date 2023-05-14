@@ -60,5 +60,5 @@ if __name__ == '__main__':
     clause.add_positive(1, 1, 1, 1)
     clause.add_negative(1, 2, 3, 4)
     clause.add_positive(2, 2, 2, 2)
-    print(clause)
-    print(clause.minisat_str())
+    # print(clause)
+    # print(clause.minisat_str())

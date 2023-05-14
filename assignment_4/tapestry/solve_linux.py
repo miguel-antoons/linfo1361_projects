@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from tapestry_solver_solution import get_expression
+from tapestry_solver import get_expression
 import minisat
 
 
@@ -91,6 +91,8 @@ if __name__ == "__main__":
 
     size, fixed_cells = read_instance(sys.argv[1])
     n_rows = n_columns = n_shapes = n_colors = size
+    print("size: ", size)
+    print("fixed : ", fixed_cells)
     expression = get_expression(size, fixed_cells)
     nb_vars = n_rows * n_columns * n_shapes * n_colors
     solution = minisat.minisat(nb_vars, [clause.minisat_str() for clause in expression], './minisatLinux')
