@@ -245,8 +245,6 @@ class LSNode:
         # return end
 
 
-
-
 def random_walk(problem, limit=100, callback=None):
     """Perform a random walk in the search space and return the best solution
     found. The returned value is a Node.
@@ -255,6 +253,7 @@ def random_walk(problem, limit=100, callback=None):
     """
     current = LSNode(problem, problem.initial, 0)
     best = current
+    no_steps = 0
     for step in range(limit):
         if callback is not None:
             callback(current)
@@ -264,7 +263,8 @@ def random_walk(problem, limit=100, callback=None):
         current = random.choice(list(current.expand()))
         if current.value() > best.value():
             best = current
-    return best
+            no_steps = step
+    return best, no_steps
 
 
 def exp_schedule(k=20, lam=0.05, limit=100):

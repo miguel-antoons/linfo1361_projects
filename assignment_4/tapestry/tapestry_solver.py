@@ -19,30 +19,65 @@ Read the comment on top of clause.py to see how this works.
 def get_expression(size, fixed_cells=None):
     expression = []
     # your code here
+    for row in range(size):
+        for col in range(size):
+            for shape in range(size):
+                for color in range(size):
+                    # each row must contain only one color
+                    for col2 in range(size):
+                        if col2 != col:
+                            for shape2 in range(size):
+                                if shape2 != shape:
+                                    clause = Clause(size)
+                                    clause.add_negative(row, col, shape, color)
+                                    clause.add_negative(row, col2, shape2, color)
+                                    expression.append(clause)
 
-    for cell in fixed_cells:
-        row = cell[0]
-        column = cell[1]
-        shape = cell[2]
-        color = cell[3]
+                    # each row must contain only one shape
+                    for col2 in range(size):
+                        if col2 != col:
+                            for color2 in range(size):
+                                if color2 != color:
+                                    clause = Clause(size)
+                                    clause.add_negative(row, col, shape, color)
+                                    clause.add_negative(row, col2, shape, color2)
+                                    expression.append(clause)
 
+                    # each column must contain only one color
+                    for row2 in range(size):
+                        if row2 != row:
+                            for shape2 in range(size):
+                                if shape2 != shape:
+                                    clause = Clause(size)
+                                    clause.add_negative(row, col, shape, color)
+                                    clause.add_negative(row2, col, shape2, color)
+                                    expression.append(clause)
 
-        new_clause = Clause(size)
-        new_clause.add_positive(cell[0], cell[1], cell[2], cell[3])
-        expression.append(new_clause)
+                    # each column must contain only one shape
+                    for row2 in range(size):
+                        if row2 != row:
+                            for color2 in range(size):
+                                if color2 != color:
+                                    clause = Clause(size)
+                                    clause.add_negative(row, col, shape, color)
+                                    clause.add_negative(row2, col, shape, color2)
+                                    expression.append(clause)
 
-    for i in range(n_rows):
-        for a in range(n_shapes):
-            for b in range(n_colors):
-                clause = [Cijab(i, j, a, b) for j in range(n_columns)]
-                exactly_one(clause)
+                    # each color and shape combination ust be unique
+                    for row2 in range(size):
+                        if row2 != row:
+                            for col2 in range(size):
+                                if col2 != col:
+                                    clause = Clause(size)
+                                    clause.add_negative(row, col, shape, color)
+                                    clause.add_negative(row2, col2, shape, color)
+                                    expression.append(clause)
 
-        for b in range(n_colors):
-            for a in range(n_shapes):
-                clause = [Cijab(i, j, a, b) for j in range(n_columns)]
-                exactly_one(clause)
-
-    print(expression)
+    # Fixed cells clauses
+    for row, col, shape, color in fixed_cells:
+        clause = Clause(size)
+        clause.add_positive(row, col, shape, color)
+        expression.append(clause)
 
     return expression
 

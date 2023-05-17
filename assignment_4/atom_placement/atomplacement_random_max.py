@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 """NAMES OF THE AUTHOR(S): Auguste Burlats <auguste.burlats@uclouvain.be>"""
 from search import *
+import time
 
 
 class AtomPlacement(Problem):
@@ -88,6 +89,7 @@ def read_instance(instance_file):
 def randomized_maxvalue(problem, limit=100):
     current = LSNode(problem, problem.initial, 0)
     best = current
+    no_steps = 0
 
     for step in range(limit):
         max_successor = []
@@ -105,20 +107,33 @@ def randomized_maxvalue(problem, limit=100):
 
         if current.value() < best.value():
             best = current
+            no_steps = step
 
-    return best
+    return best, no_steps
 
 
 #####################
 #       Launch      #
 #####################
 if __name__ == '__main__':
-    info = read_instance(sys.argv[1])
+    info = read_instance("instances/i10.txt")
     init_state = State(info[0], info[1], info[2], info[3])
     ap_problem = AtomPlacement(init_state)
     # print('Initial value = ', ap_problem.value(init_state))
     step_limit = 150
-    node = randomized_maxvalue(ap_problem, step_limit)
-    state = node.state
-    print(state)
+
+    total_time = 0
+    total_steps = 0
+    total_value = 0
+    for i in range(10):
+        start_time = time.time()
+        node, steps = randomized_maxvalue(ap_problem)
+        total_time += (time.time() - start_time)
+        state = node.state
+        total_steps += steps
+        total_value += -ap_problem.value(state)
+
+    print(f"Average time taken: {total_time / 10}")
+    print(f"Average steps: {total_steps / 10}")
+    print(f"Average value: {total_value / 10}")
     # print('End value = ', node.value())

@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 """NAMES OF THE AUTHOR(S): Auguste Burlats <auguste.burlats@uclouvain.be>"""
 from search import *
+import time
 
 
 class AtomPlacement(Problem):
@@ -87,6 +88,7 @@ def read_instance(instance_file):
 def maxvalue(problem, limit=100):
     current = LSNode(problem, problem.initial, 0)
     best = current
+    no_steps = 0
 
     for step in range(limit):
         max_successor = None
@@ -101,38 +103,24 @@ def maxvalue(problem, limit=100):
 
         if current.value() < best.value():
             best = current
+            no_steps = step
 
-    return best
-
-# def maxvalue(problem, limit=100):
-#     current = LSNode(problem, problem.initial, 0)
-#     best = current
-#
-#     for step in range(limit):
-#         for successor in current.expand():
-#             if successor.value() > best.value():
-#                 current = successor
-#
-#         if current.value() > best.value():
-#             best = current
-#         # print("len = ", len(current.expand()))
-#         # print("limit = ", step)
-#         # current = random.choice(list(current.expand()))
-#         # if current.value() > best.value():
-#         #     best = current
-#     return best
+    return best, no_steps
 
 
 #####################
 #       Launch      #
 #####################
 if __name__ == '__main__':
-    info = read_instance(sys.argv[1])
+    info = read_instance("instances/i10.txt")
     init_state = State(info[0], info[1], info[2], info[3])
     ap_problem = AtomPlacement(init_state)
     # print('Initial value = ', ap_problem.value(init_state))
     step_limit = 200
-    node = maxvalue(ap_problem, step_limit)
+    start_time = time.time()
+    node, nb_steps = maxvalue(ap_problem)
+    print(f"Time taken : {time.time() - start_time} seconds")
     state = node.state
-    print(state)
+    print(f"Node value : {-ap_problem.value(state)}")
+    print(f"Number of steps : {nb_steps}")
     # print('End value = ', node.value())

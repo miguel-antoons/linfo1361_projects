@@ -1,24 +1,36 @@
 #! /usr/bin/env python3
 """NAMES OF THE AUTHOR(S): Auguste Burlats <auguste.burlats@uclouvain.be>"""
 from search import *
+import time
 
 
 class AtomPlacement(Problem):
+    already_visited = set()
 
     # if you want you can implement this method and use it in the maxvalue and randomized_maxvalue functions
-    def successor(self, state):
-        return None
+    def successor(self, current_state):
+        for first_edge, second_edge in current_state.edges:
+            if current_state.sites[first_edge] != current_state.sites[second_edge]:
+                new_state = current_state.__copy__()
+                new_state.sites[first_edge], new_state.sites[second_edge] = new_state.sites[second_edge], new_state.sites[first_edge]
+
+                if str(new_state.sites) not in self.already_visited:
+                    yield None, new_state
 
     # if you want you can implement this method and use it in the maxvalue and randomized_maxvalue functions
-    def value(self, state):
-        return None
+    def value(self, current_state):
+        result = 0
+        for first_edge, second_edge in current_state.edges:
+            result += current_state.energy_matrix[current_state.sites[first_edge]][current_state.sites[second_edge]]
+
+        return -result
 
 
 class State:
 
-    def __init__(self, n_sites, n_types, edges, energy_matrix, sites=None):
-        self.k = len(n_types)
-        self.n_types = n_types
+    def __init__(self, n_sites, types, edges, energy_matrix, sites=None):
+        self.k = len(types)
+        self.types = types
         self.n_sites = n_sites
         self.n_edges = len(edges)
         self.edges = edges
@@ -31,7 +43,7 @@ class State:
     # an init state building is provided here but you can change it at will
     def build_init(self):
         sites = []
-        for atom_type, quantity in enumerate(self.n_types):
+        for atom_type, quantity in enumerate(self.types):
             for i in range(quantity):
                 sites.append(atom_type)
 
@@ -42,6 +54,9 @@ class State:
         for v in self.sites:
             s += ' ' + str(v)
         return s
+
+    def __copy__(self):
+        return State(self.n_sites, self.types, self.edges, self.energy_matrix, self.sites.copy())
 
 
 def read_instance(instanceFile):
@@ -93,10 +108,24 @@ def randomized_maxvalue(problem, limit=100, callback=None):
 #       Launch      #
 #####################
 if __name__ == '__main__':
-    info = read_instance(sys.argv[1])
+    info = read_instance("instances/i10.txt")
     init_state = State(info[0], info[1], info[2], info[3])
     ap_problem = AtomPlacement(init_state)
     step_limit = 100
-    node = maxvalue(ap_problem, 100, step_limit)
-    state = node.state
-    print(state)
+
+    total_time = 0
+    total_steps = 0
+    total_value = 0
+    for i in range(10):
+        start_time = time.time()
+        node, steps = random_walk(ap_problem)
+        total_time += (time.time() - start_time)
+        state = node.state
+        total_steps += steps
+        total_value += ap_problem.value(state)
+
+    print(f"Average time taken: {total_time / 10}")
+    print(f"Average steps: {total_steps / 10}")
+    print(f"Average value: {total_value / 10}")
+
+
